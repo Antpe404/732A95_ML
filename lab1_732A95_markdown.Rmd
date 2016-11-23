@@ -1,0 +1,634 @@
+---
+title: "Machine learning, Lab1, 732A95"
+author: "Anton Persson antpe404"
+date: "8 november 2016"
+output: pdf_document
+includes:
+    in_header: styles.sty
+---
+# Assignment 1.1-1.3
+I did import the data and divided the data according to the lab instructions. 
+My knearest-function was built to return the confusion matrix and error rate (see all code in the appendix). The result for the test set is shown below.
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(fig.align="center")
+
+spam<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/spambase.csv", sep=";", header=T)
+
+n=dim(spam)[1]
+set.seed(12345)
+id=sample(1:n, floor(n*0.5)) #samplar ut hälften
+train=spam[id,] #Den första halvan träning
+test=spam[-id,]#Den andra halvan test.
+
+#1.2
+
+knearest<-function(data, K, newdata){
+  data_class<-data[,ncol(data)]
+  newdata_class<-newdata[, ncol(newdata)]
+  
+  data<-data[,1:(ncol(data)-1)]
+  newdata<-newdata[,1:(ncol(newdata)-1)]
+  #i)
+  xhat<-as.matrix(data/(sqrt(rowSums(as.matrix(data)**2))))
+  #ii)
+  yhat<-as.matrix(newdata/(sqrt(rowSums(as.matrix(newdata)**2))))
+  #iii)
+  C_likhet<-xhat%*%t(yhat)
+  #iiii)
+  Dist<-1-C_likhet
+  
+  Dist2<-as.matrix(apply(Dist, 2, FUN=order ))
+  #Dist3<-as.matrix(Dist2[1:K, ])
+  Dist3<-matrix(Dist2[1:K, ], nrow=K)
+  #colnames(Dist3)<-colnames(Dist2)
+  Dist4<-as.matrix(apply(Dist3, 2, function(x){
+    mean(data_class[x])}))
+  
+  Dist4<-as.data.frame(Dist4)
+  Dist4$Pred<-round(Dist4$V1)
+  
+  tejbell<-table(pred=Dist4$Pred, truth=newdata_class)
+  
+  right_rate<-sum(diag(tejbell))/sum(tejbell)
+  err_rate<-1-right_rate
+  
+  listan<-list(confusion_matrix=tejbell, misclassification_rate=err_rate)
+  
+  return(listan)
+  #return(Dist2)
+}
+
+knearest(data=train, K=5, newdata=test)
+
+``` 
+
+As seen above, my misclassification rate is almost 32 % when i classify the test data. My knearest-function predicts 482 spams (spams as in 1:s) and 884 regular mails. Of the 442 mails predicted as spams, 240 of them actually are spam.
+
+The classification on the training set is shown below.
+```{r, echo=FALSE}
+knearest(data=train, K=5, newdata=train)
+```
+The classification rate is down to 20 %.
+
+# Assignment 1.4
+The same function with K=1 is shown below. I do show the classification of the test data first.
+```{r, echo=FALSE}
+knearest(data=train, K=1, newdata=test)
+
+```
+
+As seen above, when I use K=1 I get some more mails predicted as spam, 553 compared to 442 earlier. That's reasonable since there are more non-spams than spams, i.e bigger probability to get classified as 1 when K=1 than when K=5. My error rate is slightly up, from 32 % to 35 %, which indicates that K=5 is better in this case.
+
+Below are the confusion matrix and the misclassifcation rate for the training data.
+```{r, echo=FALSE}
+knearest(data=train, K=1, newdata=train)
+
+```
+As seen above, the classification rate is down to half a percent. I guess that's because of the cosine similarity somehow, that itäs not down to 0. The mail most similar to the training mail x should logically be itself, since that's what I do when I use the same data for both learning and predicting with K=1.
+
+To summarize, K=5 seems to be slighly better than K=1 on the test data, if I dont take the cost of misclassification into account. 
+
+#Assignment 1.5
+
+Below is the solution for the package kknn when K=5.
+
+```{r, echo=FALSE}
+library(kknn)
+
+
+data_class<-train[,ncol(train)]
+newdata_class<-test[, ncol(test)]
+
+spam_kknn <- kknn(Spam~., train, test, distance = 2, k=5,  kernel = "rectangular") 
+
+#summary(spam_kknn)
+#fitted(spam_kknn)
+#round(fitted(spam_kknn)) #Rount fitted spam är detsamma som pi=.5
+#sum(round(fitted(spam_kknn)))
+
+oh<-table(pred=round(fitted(spam_kknn)), truth=newdata_class)
+oh
+
+error_rate<-1-(sum(diag(oh))/sum(oh))
+error_rate
+```
+
+The kknn function has a slightly higher error rate than my own knearest function, 34.8 % compared to 31.7 %. My own function uses cosine similarity, kknn uses the euclidian distance per default. It's impossible to use the cosine similarity as distance measure in kknn. That seems to be too bad, since knearest outperforms kknn in this case. The lab instructions also states that the cosine smiliarty is very popular when it comes to text mining.
+
+\newpage
+
+# Assignment 1.6
+
+The sensitivity and specificity values for the two functions over the instructed sequence are calculated and visualized below. TPR, sensitivity, is on the y axis and the specificity, FPR, on the x axes. 
+
+```{r, echo=FALSE}
+#Måste ju här göra om knearest för att definera pi 
+knearest<-function(data, K, newdata, mypi){
+  data_class<-data[,ncol(data)]
+  newdata_class<-newdata[, ncol(newdata)]
+  
+  data<-data[,1:(ncol(data)-1)]
+  newdata<-newdata[,1:(ncol(newdata)-1)]
+  #i)
+  xhat<-as.matrix(data/(sqrt(rowSums(as.matrix(data)**2))))
+  #ii)
+  yhat<-as.matrix(newdata/(sqrt(rowSums(as.matrix(newdata)**2))))
+  #iii)
+  C_likhet<-xhat%*%t(yhat)
+  #iiii)
+  Dist<-1-C_likhet
+  
+  Dist2<-as.matrix(apply(Dist, 2, FUN=order ))
+  #Dist3<-as.matrix(Dist2[1:K, ])
+  Dist3<-matrix(Dist2[1:K, ], nrow=K)
+  #colnames(Dist3)<-colnames(Dist2)
+  Dist4<-as.matrix(apply(Dist3, 2, function(x){
+    mean(data_class[x])}))
+  
+  Dist4<-as.data.frame(Dist4)
+  Dist4$Pred<-Dist4$V1>mypi
+  Dist4$Pred[Dist4$Pred==TRUE]<-1
+  
+  tejbell<-table(pred=Dist4$Pred, truth=newdata_class)
+  
+  right_rate<-sum(diag(tejbell))/sum(tejbell)
+  err_rate<-1-right_rate
+  
+  listan<-list(confusion_matrix=tejbell, misclassification_rate=err_rate)
+  
+  return(listan)
+}
+
+#Fortsätter nedan:
+testlist2<-list()
+confmat<-1
+kknn_list<-list()
+
+
+spam_kknn <- kknn(Spam~., train, test, distance = 2, k=5,  kernel = "rectangular") 
+
+for (pi in seq(.05, .95, by=.05)){
+  
+  testlist2[confmat]<-knearest(data=train, K=5, newdata=test, mypi=pi)[1]
+  
+  vec<-fitted(spam_kknn)>pi
+  vec[vec==TRUE]<-1
+  oh<-table(pred=vec, truth=newdata_class)
+  kknn_list[[confmat]]<-oh
+  
+  confmat<-confmat+1
+}
+
+#Försöker få ut dem för alla här nu då.
+TPR_egen<-integer(0)
+FPR_egen<-integer(0)
+TPR_kknn<-integer(0)
+FPR_kknn<-integer(0)
+
+for (i in 1:length(testlist2)){
+  TPR_egen[i]<-((unlist(testlist2[i])[4])/(sum(unlist(testlist2[i])[3:4])))
+  FPR_egen[i]<-unlist(testlist2[i])[2]/sum(unlist(testlist2[i])[1:2])
+  TPR_kknn[i]<-((unlist(kknn_list[i])[4])/(sum(unlist(kknn_list[i])[3:4])))
+  FPR_kknn[i]<-((unlist(kknn_list[i])[2])/(sum(unlist(kknn_list[i])[1:2])))
+  
+}
+
+TPR_egen<-c(1, TPR_egen, 0)
+FPR_egen<-c(1, FPR_egen, 0)
+TPR_kknn<-c(1, TPR_kknn, 0)
+FPR_kknn<-c(1, FPR_kknn, 0)
+
+egen<-as.data.frame(cbind(FPR_egen, TPR_egen))
+oegen<-as.data.frame(cbind(FPR_kknn, TPR_kknn))
+#alldata<-cbind(egen, oegen)
+
+library(ggplot2)
+ggplot(data=egen, aes(x=FPR_egen, y=TPR_egen))+geom_point(aes(col="knearest"))+geom_line(aes(col="knearest"))+
+geom_point(data=oegen, aes(x=FPR_kknn, y=TPR_kknn, col="kknn"))+
+  geom_line(data=oegen, aes(x=FPR_kknn, y=TPR_kknn, col="kknn"))+theme_bw()+
+  ggtitle("ROC curves for knearest and kknn")+labs(x="FPR", y="TPR")
+
+```
+
+The ROC curve is constructed in the way that the optimal solution is top left in the plot, i.e. 100 % true positive rate and 0 % false positive rate. When the FPR increases (to the right in the plot), the $\pi$ (the threshold in the lab instructions) increases. That's of course not possible, especially since we loop over a sequence of thresholds. Since I don't know anything about the cost for the different missclassifications (It's not specified in the instructions) I assume that the cost are equal. When I don't have to take the costs into account, I assume it's always best to use the .5 threshold for binary classifications. That's represented by the point on the blue line closest to the topleft of the plot, located very close to the FPR=0.25-mark. That point denotes when $\pi$ equals [.45, .6] when K=5.
+From the plot I conclude that my own function, the knearest function, is slightly better than kknn, since it covers a slightly bigger area under the curve.
+
+\newpage
+
+#Assignment 2.1-2.2
+
+The formula in the lab instructions defintely looks like the exponential distribution. I did plot the data in a histogram to confirm that, see the plot below.
+
+```{r, echo=FALSE, fig.height=4, fig.width=4}
+#2.a
+machine<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/machines.csv", sep=";", header=T)
+
+#2.b)
+hist(x = machine$Length, col = "light green",main = "Distribution of the lifetime of machines",
+     xlab = "Lifetime of a machine", xlim = c(0,5), ylim=c(0,.8), probability = TRUE
+)
+
+lines(x = density(machine$Length,bw = 1), col = "red", lwd = 2)
+
+```
+
+The plot above certainly looks like a exponential distribution.
+
+To plot the curve for the dependency of the loglikelihood on theta, I did loop over possiblie thetas from .1 to 3. The result is shown below.
+
+```{r, echo=FALSE}
+
+funklog<-function(x, mytheta){
+  n<-length(x)
+  log_value<-integer(0)
+  theta<-integer(0)
+  j<-1
+  
+  
+  for (i in mytheta){
+    log_value[j]<-n*log(i, base=exp(1))-(i*(sum(x)))
+    theta[j]<-i
+    j<-j+1
+  }
+  res<-as.data.frame(cbind(log_value, theta))
+  return(res)
+}
+
+test<-funklog(x=machine[,1], mytheta=seq(.1, 3, .01))
+
+plot(test$theta, test$log_value, xlab="Theta", ylab="Log likelihood", type="o", col="blue",
+     ylim=c(-150, 0), main="Dependence of loglikelihood on theta")
+abline(v = test$theta[test$log_value==max(test$log_value)], col="red")
+mtext("All 48 observations")
+
+max_theta<-test$theta[test$log_value==max(test$log_value)]
+
+```
+
+The plot above shows that the maximum likelihood value of theta is about 1.15. It's denoted by the red vertical line.
+The exact value of the theta that maximizes the loglikelihood is shown below.
+
+```{r, echo=F}
+max_theta<-test$theta[test$log_value==max(test$log_value)]
+max_theta
+```
+
+
+\newpage
+
+#Assignment 2.3
+
+The plot with both the curve for all data and the new curve for the first six observations of the data is presented in the plot below.
+
+```{r, echo=F}
+#2.3
+twothree<-funklog(x=machine[1:6,1], mytheta=seq(.1, 3, .01)) #Only first six obs
+
+theta_twothree<-twothree$theta[twothree$log_value==max(twothree$log_value)]
+theta_test<-test$theta[test$log_value==max(test$log_value)]
+
+plot23<-ggplot(data=test, aes(x=theta, y=log_value))+geom_point(aes(col="All obs"), size=1)+
+  geom_line(aes(col="All obs"))+
+  geom_point(data=twothree, aes(x=theta, y=log_value, col="First 6 obs"), size=1)+
+  geom_line(data=twothree, aes(x=theta, y=log_value, col="First 6 obs"))+theme_bw()+
+  ggtitle("Dependence of loglikelihood on theta")+labs(x="Theta", y="Loglikelihood")+
+  geom_vline(xintercept=theta_twothree, col="#00BFC4")+ geom_vline(xintercept=theta_test, col="#F8766D")
+
+plot23
+
+```
+
+The plot above tells me that the reliability of the maximum likelihood isn't very strong. The result differs in the two curves, the theta that maximizes the loglikelihood differs almost 0.5 units according to the plot. For the full data set the maximum likelihood value of theta is 1.13, for the first six observations it's 1.55.
+
+The value of theta that maximizes the log likelihood depends on what data is used, and on the size of the data. Out of curiosity I ran the same plot but with the last six observations, and it also differs, both from the full data and from the first six observations. 
+
+\newpage
+
+#Assigment 2.4
+The plotted curve over the same span of thetas for the bayesian model with a prior $\lambda$ = 10 is presented below.
+
+```{r, echo=FALSE}
+#2.4
+
+#lambda*exp(-lambda*theta) logaritmeras till log(lambda)-(lambda*theta)
+
+priorfunk <- function(theta, lambda=10) {
+  prior_vec<-log(lambda * exp(-lambda * theta))
+  return(prior_vec)
+}
+
+my_thetas<-seq(.1, 3, .01)
+
+#Posteriorn blir alltså priorfunk+funklog om jag tänker rätt.
+
+#Svaret tror jag nedan
+post_loglike<-funklog(x = machine[,1], mytheta = my_thetas)[,1]+priorfunk(theta=my_thetas, lambda=10) 
+
+#Cbind ihop
+post_loglikeli<-cbind(post_loglike, my_thetas)
+post_loglikeli<-as.data.frame(post_loglikeli)
+
+post_theta<-post_loglikeli[82,2] #maximized theta
+
+
+plot(post_loglikeli$my_thetas, post_loglikeli$post_loglike, xlab="Theta", ylab="Log likelihood", type="o", col="blue",
+     ylim=c(-150, 0), main="Dependence of loglikelihood on theta")
+abline(v = post_theta, col="red")
+mtext("All 48 observations and prior lambda=10")
+
+```
+
+The optimal theta shown in the plot above are similar to the solution for step 2, but not identical. In step 2 the theta that optimized the likelihood was 1.13, now it's 0.91. Thus, it has changed.
+The measure that's actually being calculated is the log posterior.
+
+\newpage
+
+#Assignment 2.5
+The theta value found in assignment 2.2 equals 1.13. New random data was generated and is plotted together with the machine data in the plot below.
+```{r, echo=FALSE}
+set.seed(12345)
+random_data<-rexp(50, rate = max_theta)
+
+par(mfrow=c(1, 2))
+hist(x = machine$Length, col = "light green",main = "Original data",
+     xlab = "Lifetime of a machine", xlim=c(0,5), ylim=c(0,20))
+hist(x=random_data, col="light blue", main = "New data", 
+     xlab="Value", breaks=12) 
+
+```
+
+The plot shows two similar distributions, which is reasonable since I tried to generate a similar set of data.
+
+\newpage
+
+#Appendix
+
+The R-code used in this lab is presented below.
+
+```{r, echo=TRUE, results="hide", eval=FALSE}
+
+knitr::opts_chunk$set(fig.align="center")
+
+spam<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/spambase.csv", sep=";", header=T)
+
+n=dim(spam)[1]
+set.seed(12345)
+id=sample(1:n, floor(n*0.5)) #samplar ut hälften
+train=spam[id,] #Den första halvan träning
+test=spam[-id,]#Den andra halvan test.
+
+#1.2
+
+knearest<-function(data, K, newdata){
+  data_class<-data[,ncol(data)]
+  newdata_class<-newdata[, ncol(newdata)]
+  
+  data<-data[,1:(ncol(data)-1)]
+  newdata<-newdata[,1:(ncol(newdata)-1)]
+  #i)
+  xhat<-as.matrix(data/(sqrt(rowSums(as.matrix(data)**2))))
+  #ii)
+  yhat<-as.matrix(newdata/(sqrt(rowSums(as.matrix(newdata)**2))))
+  #iii)
+  C_likhet<-xhat%*%t(yhat)
+  #iiii)
+  Dist<-1-C_likhet
+  
+  Dist2<-as.matrix(apply(Dist, 2, FUN=order ))
+  #Dist3<-as.matrix(Dist2[1:K, ])
+  Dist3<-matrix(Dist2[1:K, ], nrow=K)
+  #colnames(Dist3)<-colnames(Dist2)
+  Dist4<-as.matrix(apply(Dist3, 2, function(x){
+    mean(data_class[x])}))
+  
+  Dist4<-as.data.frame(Dist4)
+  Dist4$Pred<-round(Dist4$V1)
+  
+  tejbell<-table(pred=Dist4$Pred, truth=newdata_class)
+  
+  right_rate<-sum(diag(tejbell))/sum(tejbell)
+  err_rate<-1-right_rate
+  
+  listan<-list(confusion_matrix=tejbell, misclassification_rate=err_rate)
+  
+  return(listan)
+  #return(Dist2)
+}
+
+knearest(data=train, K=5, newdata=test)
+
+#1.3
+knearest(data=train, K=5, newdata=train)
+#1.4
+knearest(data=train, K=1, newdata=test)
+
+knearest(data=train, K=1, newdata=train)
+
+#1.5
+library(kknn)
+
+
+data_class<-train[,ncol(train)]
+newdata_class<-test[, ncol(test)]
+
+spam_kknn <- kknn(Spam~., train, test, distance = 2, k=5,  kernel = "rectangular") 
+
+#summary(spam_kknn)
+#fitted(spam_kknn)
+#round(fitted(spam_kknn)) #Rount fitted spam är detsamma som pi=.5
+#sum(round(fitted(spam_kknn)))
+
+oh<-table(pred=round(fitted(spam_kknn)), truth=newdata_class)
+oh
+
+error_rate<-1-(sum(diag(oh))/sum(oh))
+error_rate
+
+#1.6
+
+#Måste ju här göra om knearest för att definera pi 
+knearest<-function(data, K, newdata, mypi){
+  data_class<-data[,ncol(data)]
+  newdata_class<-newdata[, ncol(newdata)]
+  
+  data<-data[,1:(ncol(data)-1)]
+  newdata<-newdata[,1:(ncol(newdata)-1)]
+  #i)
+  xhat<-as.matrix(data/(sqrt(rowSums(as.matrix(data)**2))))
+  #ii)
+  yhat<-as.matrix(newdata/(sqrt(rowSums(as.matrix(newdata)**2))))
+  #iii)
+  C_likhet<-xhat%*%t(yhat)
+  #iiii)
+  Dist<-1-C_likhet
+  
+  Dist2<-as.matrix(apply(Dist, 2, FUN=order ))
+  #Dist3<-as.matrix(Dist2[1:K, ])
+  Dist3<-matrix(Dist2[1:K, ], nrow=K)
+  #colnames(Dist3)<-colnames(Dist2)
+  Dist4<-as.matrix(apply(Dist3, 2, function(x){
+    mean(data_class[x])}))
+  
+  Dist4<-as.data.frame(Dist4)
+  Dist4$Pred<-Dist4$V1>mypi
+  Dist4$Pred[Dist4$Pred==TRUE]<-1
+  
+  tejbell<-table(pred=Dist4$Pred, truth=newdata_class)
+  
+  right_rate<-sum(diag(tejbell))/sum(tejbell)
+  err_rate<-1-right_rate
+  
+  listan<-list(confusion_matrix=tejbell, misclassification_rate=err_rate)
+  
+  return(listan)
+}
+
+#Fortsätter nedan:
+testlist2<-list()
+confmat<-1
+kknn_list<-list()
+
+
+spam_kknn <- kknn(Spam~., train, test, distance = 2, k=5,  kernel = "rectangular") 
+
+for (pi in seq(.05, .95, by=.05)){
+  
+  testlist2[confmat]<-knearest(data=train, K=5, newdata=test, mypi=pi)[1]
+  
+  vec<-fitted(spam_kknn)>pi
+  vec[vec==TRUE]<-1
+  oh<-table(pred=vec, truth=newdata_class)
+  kknn_list[[confmat]]<-oh
+  
+  confmat<-confmat+1
+}
+
+#Försöker få ut dem för alla här nu då.
+TPR_egen<-integer(0)
+FPR_egen<-integer(0)
+TPR_kknn<-integer(0)
+FPR_kknn<-integer(0)
+
+for (i in 1:length(testlist2)){
+  TPR_egen[i]<-((unlist(testlist2[i])[4])/(sum(unlist(testlist2[i])[3:4])))
+  FPR_egen[i]<-unlist(testlist2[i])[2]/sum(unlist(testlist2[i])[1:2])
+  TPR_kknn[i]<-((unlist(kknn_list[i])[4])/(sum(unlist(kknn_list[i])[3:4])))
+  FPR_kknn[i]<-((unlist(kknn_list[i])[2])/(sum(unlist(kknn_list[i])[1:2])))
+  
+}
+
+TPR_egen<-c(1, TPR_egen, 0)
+FPR_egen<-c(1, FPR_egen, 0)
+TPR_kknn<-c(1, TPR_kknn, 0)
+FPR_kknn<-c(1, FPR_kknn, 0)
+
+egen<-as.data.frame(cbind(FPR_egen, TPR_egen))
+oegen<-as.data.frame(cbind(FPR_kknn, TPR_kknn))
+#alldata<-cbind(egen, oegen)
+
+library(ggplot2)
+ggplot(data=egen, aes(x=FPR_egen, y=TPR_egen))+
+  geom_point(aes(col="knearest"))+
+  geom_line(aes(col="knearest"))+
+geom_point(data=oegen, aes(x=FPR_kknn, y=TPR_kknn, col="kknn"))+
+  geom_line(data=oegen, aes(x=FPR_kknn, y=TPR_kknn, col="kknn"))+
+  theme_bw()+
+  ggtitle("ROC curves for knearest and kknn")+labs(x="FPR", y="TPR")
+
+#Assignment 2
+#2.1
+machine<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/machines.csv", 
+                   sep=";", header=T)
+
+#2.2
+hist(x = machine$Length, col = "light green",main = "Distribution of the lifetime of machines",
+     xlab = "Lifetime of a machine", xlim = c(0,5), ylim=c(0,.8), probability = TRUE
+)
+
+lines(x = density(machine$Length,bw = 1), col = "red", lwd = 2)
+
+
+funklog<-function(x, mytheta){
+  n<-length(x)
+  log_value<-integer(0)
+  theta<-integer(0)
+  j<-1
+  
+  
+  for (i in mytheta){
+    log_value[j]<-n*log(i, base=exp(1))-(i*(sum(x)))
+    theta[j]<-i
+    j<-j+1
+  }
+  res<-as.data.frame(cbind(log_value, theta))
+  return(res)
+}
+
+test<-funklog(x=machine[,1], mytheta=seq(.1, 3, .01))
+
+plot(test$theta, test$log_value, xlab="Theta", ylab="Log likelihood", type="o", col="blue",
+     ylim=c(-150, 0), main="Dependence of loglikelihood on theta")
+abline(v = test$theta[test$log_value==max(test$log_value)], col="red")
+mtext("All 48 observations")
+
+max_theta<-test$theta[test$log_value==max(test$log_value)]
+
+max_theta<-test$theta[test$log_value==max(test$log_value)]
+max_theta
+
+#2.3
+twothree<-funklog(x=machine[1:6,1], mytheta=seq(.1, 3, .01)) #Only first six obs
+
+theta_twothree<-twothree$theta[twothree$log_value==max(twothree$log_value)]
+theta_test<-test$theta[test$log_value==max(test$log_value)]
+
+plot23<-ggplot(data=test, aes(x=theta, y=log_value))+geom_point(aes(col="All obs"), size=1)+
+  geom_line(aes(col="All obs"))+
+  geom_point(data=twothree, aes(x=theta, y=log_value, col="First 6 obs"), size=1)+
+  geom_line(data=twothree, aes(x=theta, y=log_value, col="First 6 obs"))+theme_bw()+
+  ggtitle("Dependence of loglikelihood on theta")+labs(x="Theta", y="Loglikelihood")+
+  geom_vline(xintercept=theta_twothree, col="#00BFC4")+ geom_vline(xintercept=theta_test, col="#F8766D")
+
+plot23
+
+#2.4
+
+#lambda*exp(-lambda*theta) logaritmeras till log(lambda)-(lambda*theta)
+
+priorfunk <- function(theta, lambda=10) {
+  prior_vec<-log(lambda * exp(-lambda * theta))
+  return(prior_vec)
+}
+
+my_thetas<-seq(.1, 3, .01)
+
+#Posteriorn blir alltså priorfunk+funklog om jag tänker rätt.
+
+#Svaret tror jag nedan
+post_loglike<-funklog(x = machine[,1], mytheta = my_thetas)[,1]+priorfunk(theta=my_thetas, lambda=10) 
+
+#Cbind ihop
+post_loglikeli<-cbind(post_loglike, my_thetas)
+post_loglikeli<-as.data.frame(post_loglikeli)
+
+post_theta<-post_loglikeli[82,2] #maximized theta
+
+
+plot(post_loglikeli$my_thetas, post_loglikeli$post_loglike, xlab="Theta", ylab="Log likelihood", type="o", col="blue",
+     ylim=c(-150, 0), main="Dependence of loglikelihood on theta")
+abline(v = post_theta, col="red")
+mtext("All 48 observations and prior lambda=10")
+
+#2.5
+set.seed(12345)
+random_data<-rexp(50, rate = max_theta)
+
+par(mfrow=c(1, 2))
+hist(x = machine$Length, col = "light green",main = "Original data",
+     xlab = "Lifetime of a machine", xlim=c(0,5), ylim=c(0,20))
+hist(x=random_data, col="light blue", main = "New data", 
+     xlab="Value", breaks=12) 
+
+```
+

@@ -1,0 +1,681 @@
+---
+title: "Lab 3 732A95 Introduction to machine learning"
+author: "Anton Persson antpe404"
+date: "21 november 2016"
+output: pdf_document
+---
+#LDA and logistic regression
+
+##Assignment 1.1
+
+The scatterplot of carapace length versus rear width has been grouped by the sex of the crabs. The plot is shown below.
+
+```{r, echo=F}
+#1.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+crabs<-read.csv("australian-crabs.csv", sep=",", header=T)
+plot(crabs$CL, crabs$RW, col=crabs$sex, xlab="CL", ylab="RW")
+title("CL vs RW, colored by sex")
+```
+
+The data should be classifiable by linear discriminant analysis, since it looks like the boundary is linear.
+
+\newpage
+
+##Assignment 1.2-1.3
+
+Since it's impossible to find the the decision boundary in the lda() function, I did the calculations myself to find the boundary. The result is given below.
+
+```{r, echo=FALSE}
+#1.2
+#Mean-matrisen
+Mu_class<-matrix(nrow=2, ncol=2)
+Mu_class[1,1]<-mean(crabs[crabs$sex=="Female",5])#CL där sex=F
+Mu_class[1,2]<-mean(crabs[crabs$sex=="Female",6])#RW där sex=F
+Mu_class[2,1]<-mean(crabs[crabs$sex=="Male",5])#CL där sex=M
+Mu_class[2,2]<-mean(crabs[crabs$sex=="Male",6])#RW där sex=M
+
+rownames(Mu_class)<-c("Female", "Male")
+colnames(Mu_class)<-c("RW", "CL")
+
+#Sigma, aka W. Dvs cov-matriserna för de bägge könen.
+sigma_hat_C<-by(cbind(crabs$RW, crabs$CL), crabs$sex, FUN=cov, method="pearson")
+sigma_hat_female<-sigma_hat_C$Female
+sigma_hat_male<-sigma_hat_C$Male
+
+sigma_hat<-(1/200)*((100*sigma_hat_female)+(100*sigma_hat_male))
+
+#Prior
+prior_female<-100/200
+prior_male<-100/200
+
+#nu slide 19.
+Mu_class_F<-as.matrix(Mu_class[1,])
+Mu_class_M<-as.matrix(Mu_class[2,])
+
+#w_i på slide 19
+#https://liuonline.sharepoint.com/sites/732A95/732A95-2016HT/CourseDocuments/Lecture3a.pdf
+W_female<-solve(sigma_hat)%*%Mu_class_F
+W_male<-solve(sigma_hat)%*%Mu_class_M
+#w_0i 
+W0_female<-(-(1/2)*((t(Mu_class_F))%*%solve(sigma_hat)%*%Mu_class_F)+log(prior_female))
+W0_male<-(-((1/2))*((t(Mu_class_M))%*%solve(sigma_hat)%*%Mu_class_M)+log(prior_male))
+
+#X-matriserna, för bägge sexes samt delat på kön
+X<-matrix(rbind(crabs$RW, crabs$CL), nrow=2)
+X_male<-t(as.matrix(crabs[crabs$sex=="Male", 5:6])) #för males
+X_female<-t(as.matrix(crabs[crabs$sex=="Female", 5:6])) #Detta är CL och RW för females
+
+#delta_i, discriminant function, bottom slide 19.
+delta_female<-(t(X_female)%*%W_female%*%W0_female)
+delta_male<-(t(X_male)%*%W_male%*%W0_male)
+
+#solve(sigma_hat)%*%(My_class_F-My_class_M)
+
+#ska nu lösa delta_female=delta_male enligt s17 i 
+#http://www.stat.cmu.edu/~ryantibs/datamining/lectures/20-clas1.pdf
+
+a<-as.numeric(W0_male-W0_female)
+b<-W_male-W_female
+
+solution<-t(a+(t(b)%*%X)) #a är intercept. b är två beta i detta fall. X alla data.
+
+#Gör solution till df för att addera kol
+solution<-as.data.frame(solution)
+
+solution$gender[solution$V1>0]<-"Male"
+solution$gender[solution$V1<0]<-"Female"
+
+#Lägger till den i crabs för att kunna plotta.
+crabs$class_LDA<-factor(solution$gender)
+
+
+#1.3
+intercept_lda<-(-a)/b[1]
+slope_lda<-(-b[2])/b[1]
+
+plot(crabs$CL, crabs$RW, col=crabs$class_LDA, xlab="CL", ylab="RW")
+abline(a=intercept_lda, b=slope_lda, lty=1, lwd=2)
+title("Crabs classified with own LDA")
+
+
+```
+
+For the plot above I conclude that obviously it was possible to classify the data with the linear discriminant analysis. If you look closely at this plot compared to the observed classes in assignment 1.1 you can see that there are some obervations that are missclassified. For example, the one observation at the bottom left is observed as black (female) but classified as red (male).
+The decision boundary, which is in the plot above, is shown below.
+
+```{r, echo=F}
+#He also want me to plot the equation of the decision boundary:
+boundary<-list(Intercept=intercept_lda, Slope=slope_lda)
+boundary
+
+```
+
+The discriminant functions for the respective sexes are presented below.
+
+$$\delta_{\text{male}} (x)= `r W0_male`+`r W_male[1,1]`*RW+(`r W_male[2,1]`*CL)$$
+$$\delta_{\text{female}} (x)= `r W0_female`+`r W_female[1,1]`*RW+(`r W_female[2,1]`*CL)$$
+
+\newpage
+
+##Assignment 1.4
+
+The logistic regression, where i used the glm() function, provided the results and decision boundary that is shown below.
+
+```{r, echo=F, warning=F}
+
+#1.4
+glm_mod<-glm(sex~RW+CL, data=crabs, family=binomial ) 
+
+#uträkningarna enligt samma princip som 1.3
+intercept_logreg<-(-glm_mod$coefficients[1])/(glm_mod$coefficients[2]) 
+slope_logreg<-(-glm_mod$coefficients[3])/(glm_mod$coefficients[2])
+
+logreg_fits<-as.data.frame(glm_mod$linear.predictors)
+colnames(logreg_fits)<-"value"
+logreg_fits$gender[logreg_fits$value>0]<-"Male"
+logreg_fits$gender[logreg_fits$value<0]<-"Female"
+
+crabs$class_logreg<-as.factor(logreg_fits$gender)
+
+plot(crabs$CL, crabs$RW, col=crabs$class_logreg, xlab="CL", ylab="RW")
+abline(a=intercept_logreg, b=slope_logreg, lty=1, lwd=2)
+title("Crabs classified with glm() function")
+
+```
+
+The boundary and the classification in the plot above, for the logistic regression, look very much like the one with my own LDA i assignment 1.2-1.3. That's reasonable, since the two models are on the same form. I can see that some observations are classified differently, for example the "lonely" observation at about CL=37, the observation between the two streams of females and males. The logistic regression classifies it as male (red), the LDA as female (black). That has to do with the the equation for the the boundary, so I choose to present that to. The boundary for the logistic regression is shown below.
+
+```{r, echo=F}
+boundary_glm<-list(Intercept=as.vector(intercept_logreg), Slope=as.vector(slope_logreg))
+boundary_glm
+
+```
+
+The slope for the logistic regression is a bit steeper than for the LDA, .369 vs .343. That means that even though the intercept is lower for the logistic regression (1.08 vs 1.74), the steeper slope results in different classification of that observation for the respective methods.
+
+\newpage
+
+#Assignment 2 Analysis of credit scoring
+
+##Assignment 2.1
+
+I did use the following R code to separate the data into training-, validation- and test set.
+
+```{r, echo=T}
+#2.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+
+credit<-read.csv2("creditscoring.csv", header=T, sep=";")
+set.seed(12345)
+samples<-1:nrow(credit)
+train_id<-sample(samples, floor(nrow(credit)*.5))
+samples2<-samples[-train_id]
+valid_id<-sample(samples2, floor(nrow(credit)*.25))
+#any (id2 %in% id) FALSE
+test_id<-samples[-c(train_id, valid_id)]
+train<-credit[train_id, ]
+validation<-credit[valid_id,]
+test<-credit[test_id,]
+
+```
+
+```{r, echo=F}
+#Annat sätt att sampla som ger mig annorlunda res
+#Nedan används ej, men var så KS gjorde, bara för jmf.
+
+#Suffle the rows
+#set.seed(12345)
+#credit <- credit[sample(nrow(credit)),]
+
+#Divide them up in different sets 
+#train <- credit[1:(nrow(credit)*0.50),]
+#validation <- credit[((nrow(credit)*0.50)+1):floor(nrow(credit)*0.75),]
+#test  <- credit[((nrow(credit)*0.75)+1):nrow(credit), ]
+
+```
+
+\newpage
+
+##2.2a, Deviance
+
+The default decision tree, created by the tree function, with \textit{deviance} as impurity measure is shown below.
+
+```{r, echo=F, warning=F, fig.height=8, fig.weight=10}
+#2.2a
+library(tree)
+dev_tree<-tree(formula = good_bad~., split="deviance", data=train) 
+
+plot(dev_tree)
+text(dev_tree, pretty=0)
+title("Default tree, impurity measure: deviance")
+
+```
+
+The actual tree and their rules are shown above. The missclassification rates for both the training- and test data are shown below.
+
+```{r, echo=F}
+#2.2 deviance
+#Train
+dev_fit_train<-predict(dev_tree, newdata=train, type="class")
+
+table_dev_train<-table(pred=dev_fit_train, truth=train$good_bad)
+#table_dev_train
+error_dev_train<-1-sum(diag(table_dev_train))/sum(table_dev_train)
+
+#Test
+dev_fit_test<-predict(dev_tree, newdata=test, type="class")
+
+table_dev_test<-table(pred=dev_fit_test, truth=test$good_bad)
+#table_dev_test
+error_dev_test<-1-sum(diag(table_dev_test))/sum(table_dev_test)
+
+dev_errors<-list(Training_error=error_dev_train, Test_error=error_dev_test)
+dev_errors
+
+```
+
+The error rate in the training data is about 21 %, about 28 % percent for the test data.
+
+##2.2b, Gini
+
+The same procedure for the decision tree with \textit{gini} as impurity measure is presented below.
+
+```{r, echo=F}
+#2.2b
+gini_tree<-tree(formula = good_bad~., split="gini", data=train) 
+
+plot(gini_tree)
+#text(gini_tree, pretty=0)
+title("Default tree, impurity measure: gini")
+
+```
+
+Since this tree is more complex, it has 72 leaves (compared to 15 in the deviance-tree), I decided to remove the text in the plot. It looks awful in this format with the text. The missclassification rates for both data sets are as follows.
+
+```{r, echo=F}
+#2.2 gini train
+gini_fit_train<-predict(gini_tree, newdata=train, type="class")
+table_gini_train<-table(pred=gini_fit_train, truth=train$good_bad)
+
+error_gini_train<-1-sum(diag(table_gini_train))/sum(table_gini_train)
+
+#Test
+gini_fit_test<-predict(gini_tree, newdata=test, type="class")
+
+table_gini_test<-table(pred=gini_fit_test, truth=test$good_bad)
+error_gini_test<-1-sum(diag(table_gini_test))/sum(table_gini_test)
+
+gini_errors<-list(Training_error=error_gini_train, Test_error=error_gini_test)
+gini_errors
+
+```
+
+The error rate for the gini tree is 23 % on the training set, and 34 % on the test set. That's worse than the respcitive rates for the deviance tree. Therefors, I will use the deviance as the impurity measure from now on. 
+
+##Assignment 2.3
+
+The required plot of the dependencies of deviances for different number of leaves, for both the training and validation data, is presented below.
+
+```{r, echo=F}
+#2.3 med deviance då.
+
+train_score<-rep(0,12)
+valid_score<-rep(0,12)
+for(i in 2:length(train_score)) {
+  pruned_tree<-prune.tree(dev_tree,best=i)
+  pred<-predict(pruned_tree, newdata=validation,
+                type="tree")
+  train_score[i]<-deviance(pruned_tree)
+  valid_score[i]<-deviance(pred)*2 #eftersom deviance returnerar total deviance, valid hälften så stor
+}
+plot(x=2:length(train_score), y=train_score[-1], type="b", col="red", ylim=c(min(train_score[-1]), max(valid_score)), xlab="Number of leaves", ylab="Deviance")
+points(x=2:length(valid_score), y=valid_score[-1], type="b", col="blue")
+title("Deviance for different number of leaves in tree")
+legend(9,570, c("Train","Validation"),col=c("red","blue"),  lty=c(1,1), lwd=c(1.5,1.5)) # gives the legend lines the correct color and width
+
+
+```
+
+It should be noted that I did multiply the deviance for the validation set predictions by 2, since the train data set is twice as big. This was done since the deviance() function only summarizes the deviance. That action isn't necessary, but I did it because I got confused in the first place by the fact that the deviance was lower for the validation set. However, from looking on the plot above, I conclude that four leaves seems to result in the optimal tree.
+
+The optimal tree is visualized below.
+
+```{r, echo=F}
+
+dev_tree<-tree(formula = good_bad~., split="deviance", data=train)
+
+tree_4leaves<-prune.tree(dev_tree, best=4)
+
+plot(tree_4leaves)
+text(tree_4leaves, pretty=0)
+title("Tree with four leaves, impurity measure: deviance")
+
+```
+
+The tree above has the depth three. It has four leaves, as concluded earlier, and the three variables used in the consturction of the tree are \textit{Savings, Duration} and \textit{History}.
+In general, the tree says that if a potential customer has big savings, he or she will pay back the loan. If the customer has small \textit{savings}, and \textit{Duration} above 43.5 (I don't reallt know what that variable means) for example, he or she will be classified as a customer who won't pay back their loan.
+The misclassification for the tree on the test data is presented below.
+
+```{r, echo=F}
+dev_fit_final<-predict(tree_4leaves, newdata=test,
+             type="class")
+
+table_dev_final<-table(pred=dev_fit_final, truth=test$good_bad)
+
+error_dev_final<-1-sum(diag(table_dev_final))/sum(table_dev_final)
+final_tree_error<-list(Missclassification_rate_testdata=error_dev_final)
+final_tree_error
+
+```
+
+The missclassification rate has sunk from 28.6 % in the first tree model (with 15 leaves), to 26 % in this model.
+
+\newpage
+
+##Assignment 2.4
+
+The requested confusion matrices and their respective error rates are presented below.
+
+```{r, echo=F, warning=F}
+
+#2.4
+library(e1071)
+
+nb<-naiveBayes(formula=good_bad~., data=train)
+
+#Train
+nb_fit_train<-predict(nb, newdata=train, type="class")
+#sum(nb_fit_train=="good")
+nb_table_train<-table(pred=nb_fit_train, truth=train$good_bad)
+
+error_nb_train<-1-(sum(diag(nb_table_train))/sum(nb_table_train))
+
+
+#Test
+nb_fit_test<-predict(nb, newdata=test, type="class")
+nb_table_test<-table(pred=nb_fit_test, truth=test$good_bad)
+
+error_nb_test<-1-(sum(diag(nb_table_test))/sum(nb_table_test))
+
+naive_bayes<-list(confusion_matrix_train=nb_table_train, error_rate_train=error_nb_train, 
+      confusion_matrix_test=nb_table_test, error_rate_train=error_nb_test)
+
+naive_bayes
+
+#library(knitr)
+#kable(confusion_matrix_train=nb_table_train, confusion_matrix_test=nb_table_test))
+#c(kable(nb_table_train), kable(nb_table_test))
+#kable(nb_table_test, row.names="Pred", col.names="Truth")
+#kable(nb_table_train, caption="Train") #denna funkar, men får dem inte bredvid varann.
+#tran<-kable(nb_table_train, caption="Train")
+#testning<-kable(nb_table_test, caption="Test")
+#kable(list((nb_table_train, catpion="Train"), (nb_table_test, caption="Test")))
+#kable(list(tran, testning))
+
+```
+
+
+From the missclassification errors I do conclude that this naive bayes model has worse error rates than the tree in assignment 2.3.
+
+\newpage
+
+##Assignment 2.5
+
+In this assignment I've made some changes in the loss function. Practically, what I've done is to recognize that it's expensive to classify a customer as "good" when the truth is that the customer is "bad" at managing their loans. This means that for me to make the classification "good", I need the probability of the customer getting classified as "good" to be 10 times bigger than the probability for getting classified as "bad" to classify the customer as "good". The confusion matrices for the training- and test data are shown below.
+
+```{r, echo=F}
+
+#2.5 train
+nb_fit_raw_train<-predict(nb, newdata=train, type="raw")
+
+nb_fit_raw_train<-as.data.frame(nb_fit_raw_train)
+nb_fit_raw_train$class[nb_fit_raw_train$good>(nb_fit_raw_train$bad*10)]<-"good"
+nb_fit_raw_train$class[nb_fit_raw_train$good<=(nb_fit_raw_train$bad*10)]<-"bad"
+nb_fit_raw_train$class<-as.factor(nb_fit_raw_train$class)
+
+nb_loss_train<-table(pred=nb_fit_raw_train$class, truth=train$good_bad)
+
+#nb_loss_train
+
+#error_loss_train<-1-(sum(diag(nb_loss_train))/sum(nb_loss_train))
+#error_loss_train
+
+#2.5 test
+
+nb_fit_raw_test<-as.data.frame(predict(nb, newdata=test, type="raw"))
+
+nb_fit_raw_test$class[nb_fit_raw_test$good>(nb_fit_raw_test$bad*10)]<-"good"
+nb_fit_raw_test$class[nb_fit_raw_test$good<=(nb_fit_raw_test$bad*10)]<-"bad"
+nb_fit_raw_test$class<-as.factor(nb_fit_raw_test$class)
+
+nb_loss_test<-table(pred=nb_fit_raw_test$class, truth=test$good_bad)
+#nb_loss_test
+
+#error_loss_test<-1-(sum(diag(nb_loss_test))/sum(nb_loss_test))
+#error_loss_test
+nb_loss_confusion<-list(confusion_matrix_train=nb_loss_train, confusion_matrix_test=nb_loss_test)
+nb_loss_confusion
+
+```
+
+From the confusion matrices above I conclude that the error rates gets worse, which is reasonable.  Since I really don't want to classify a customer as "good" when he or she really turns out to be "bad"", I classify too many observations as "bad". I get a lot of observations classfied as "bad" wrong, which can be seen in the matrices, because of that.
+
+In this assignment, the vast majority of my misclassifications are classfied as "bad" but truth is "good". In assignment 2.4, the proportions between the two different error rates are much more equal. And this is actually a good thing in this case, since the task is about to really avoid to classify customers as "good" in managing their loans, when they turn out to be "bad", i.e. not pay back the money.
+
+\newpage
+
+#Appendix
+
+Here's the R code for this lab.
+
+```{r, echo=t, results="hide", eval=FALSE}
+#1.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+crabs<-read.csv("australian-crabs.csv", sep=",", header=T)
+plot(crabs$CL, crabs$RW, col=crabs$sex)
+title("CL vs RW, colored by sex")
+
+#1.2
+#Mean-matrisen
+Mu_class<-matrix(nrow=2, ncol=2)
+Mu_class[1,1]<-mean(crabs[crabs$sex=="Female",5])#CL där sex=F
+Mu_class[1,2]<-mean(crabs[crabs$sex=="Female",6])#RW där sex=F
+Mu_class[2,1]<-mean(crabs[crabs$sex=="Male",5])#CL där sex=M
+Mu_class[2,2]<-mean(crabs[crabs$sex=="Male",6])#RW där sex=M
+
+rownames(Mu_class)<-c("Female", "Male")
+colnames(Mu_class)<-c("RW", "CL")
+
+#Sigma, aka W. Dvs cov-matriserna för de bägge könen.
+sigma_hat_C<-by(cbind(crabs$RW, crabs$CL), crabs$sex, FUN=cov, method="pearson")
+sigma_hat_female<-sigma_hat_C$Female
+sigma_hat_male<-sigma_hat_C$Male
+
+sigma_hat<-(1/200)*((100*sigma_hat_female)+(100*sigma_hat_male))
+
+#Prior
+prior_female<-100/200
+prior_male<-100/200
+
+#nu slide 19.
+Mu_class_F<-as.matrix(Mu_class[1,])
+Mu_class_M<-as.matrix(Mu_class[2,])
+
+#w_i på slide 19
+#https://liuonline.sharepoint.com/sites/732A95/732A95-2016HT/CourseDocuments/Lecture3a.pdf
+W_female<-solve(sigma_hat)%*%Mu_class_F
+W_male<-solve(sigma_hat)%*%Mu_class_M
+#w_0i 
+W0_female<-(-(1/2)*((t(Mu_class_F))%*%solve(sigma_hat)%*%Mu_class_F)+log(prior_female))
+W0_male<-(-((1/2))*((t(Mu_class_M))%*%solve(sigma_hat)%*%Mu_class_M)+log(prior_male))
+
+#X-matriserna, för bägge sexes samt delat på kön
+X<-matrix(rbind(crabs$RW, crabs$CL), nrow=2)
+X_male<-t(as.matrix(crabs[crabs$sex=="Male", 5:6])) #för males
+X_female<-t(as.matrix(crabs[crabs$sex=="Female", 5:6])) #Detta är CL och RW för females
+
+#delta_i, discriminant function, bottom slide 19.
+delta_female<-(t(X_female)%*%W_female%*%W0_female)
+delta_male<-(t(X_male)%*%W_male%*%W0_male)
+
+#solve(sigma_hat)%*%(My_class_F-My_class_M)
+
+#ska nu lösa delta_female=delta_male enligt s17 i 
+#http://www.stat.cmu.edu/~ryantibs/datamining/lectures/20-clas1.pdf
+
+a<-as.numeric(W0_male-W0_female)
+b<-W_male-W_female
+
+solution<-t(a+(t(b)%*%X)) #a är intercept. b är två beta i detta fall. X alla data.
+
+#Gör solution till df för att addera kol
+solution<-as.data.frame(solution)
+
+solution$gender[solution$V1>0]<-"Male"
+solution$gender[solution$V1<0]<-"Female"
+
+#Lägger till den i crabs för att kunna plotta.
+crabs$class_LDA<-factor(solution$gender)
+
+
+#1.3
+intercept_lda<-(-a)/b[1]
+slope_lda<-(-b[2])/b[1]
+
+plot(crabs$CL, crabs$RW, col=crabs$class_LDA, xlab="CL", ylab="RW")
+abline(a=intercept_lda, b=slope_lda, lty=1, lwd=2)
+title("Crabs classified with own LDA")
+
+#He also want me to plot the equation of the decision boundary:
+boundary<-list(Intercept=intercept_lda, Slope=slope_lda)
+boundary
+
+#1.4
+glm_mod<-glm(sex~RW+CL, data=crabs, family=binomial ) 
+
+#uträkningarna enligt samma princip som 1.3
+intercept_logreg<-(-glm_mod$coefficients[1])/(glm_mod$coefficients[2]) 
+slope_logreg<-(-glm_mod$coefficients[3])/(glm_mod$coefficients[2])
+
+logreg_fits<-as.data.frame(glm_mod$linear.predictors)
+colnames(logreg_fits)<-"value"
+logreg_fits$gender[logreg_fits$value>0]<-"Male"
+logreg_fits$gender[logreg_fits$value<0]<-"Female"
+
+crabs$class_logreg<-as.factor(logreg_fits$gender)
+
+plot(crabs$CL, crabs$RW, col=crabs$class_logreg, xlab="CL", ylab="RW")
+abline(a=intercept_logreg, b=slope_logreg, lty=1, lwd=2)
+title("Crabs classified with glm() function")
+
+boundary_glm<-list(Intercept=as.vector(intercept_logreg), Slope=as.vector(slope_logreg))
+boundary_glm
+
+#2.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+
+credit<-read.csv2("creditscoring.csv", header=T, sep=";")
+set.seed(12345)
+samples<-1:nrow(credit)
+train_id<-sample(samples, floor(nrow(credit)*.5))
+samples2<-samples[-train_id]
+valid_id<-sample(samples2, floor(nrow(credit)*.25))
+#any (id2 %in% id) FALSE
+test_id<-samples[-c(train_id, valid_id)]
+train<-credit[train_id, ]
+validation<-credit[valid_id,]
+test<-credit[test_id,]
+
+#2.2a
+library(tree)
+dev_tree<-tree(formula = good_bad~., split="deviance", data=train) 
+
+plot(dev_tree)
+text(dev_tree, pretty=0)
+title("Default tree, impurity measure: deviance")
+
+#Train
+dev_fit_train<-predict(dev_tree, newdata=train, type="class")
+
+table_dev_train<-table(pred=dev_fit_train, truth=train$good_bad)
+
+error_dev_train<-1-sum(diag(table_dev_train))/sum(table_dev_train)
+
+#Test
+dev_fit_test<-predict(dev_tree, newdata=test, type="class")
+
+table_dev_test<-table(pred=dev_fit_test, truth=test$good_bad)
+
+error_dev_test<-1-sum(diag(table_dev_test))/sum(table_dev_test)
+
+dev_errors<-list(Training_error=error_dev_train, Test_error=error_dev_test)
+dev_errors
+
+#2.2b
+gini_tree<-tree(formula = good_bad~., split="gini", data=train) 
+
+plot(gini_tree)
+title("Default tree, impurity measure: gini")
+
+#2.2 gini train
+gini_fit_train<-predict(gini_tree, newdata=train, type="class")
+
+table_gini_train<-table(pred=gini_fit_train, truth=train$good_bad)
+
+error_gini_train<-1-sum(diag(table_gini_train))/sum(table_gini_train)
+
+#Test
+gini_fit_test<-predict(gini_tree, newdata=test, type="class")
+
+table_gini_test<-table(pred=gini_fit_test, truth=test$good_bad)
+error_gini_test<-1-sum(diag(table_gini_test))/sum(table_gini_test)
+
+gini_errors<-list(Training_error=error_gini_train, Test_error=error_gini_test)
+gini_errors
+
+#2.3 med deviance då.
+
+train_score<-rep(0,12)
+valid_score<-rep(0,12)
+for(i in 2:length(train_score)) {
+  pruned_tree<-prune.tree(dev_tree,best=i)
+  pred<-predict(pruned_tree, newdata=validation,
+                type="tree")
+  train_score[i]<-deviance(pruned_tree)
+  valid_score[i]<-deviance(pred)*2 
+  #eftersom deviance returnerar total deviance, valid hälften så stor
+}
+plot(x=2:length(train_score), y=train_score[-1], type="b",
+     col="red", ylim=c(min(train_score[-1]), 
+      max(valid_score)), xlab="Number of leaves", ylab="Deviance")
+points(x=2:length(valid_score), y=valid_score[-1], type="b", col="blue")
+title("Deviance for different number of leaves in tree")
+legend(9,570, c("Train","Validation"),col=c("red","blue"),  lty=c(1,1), lwd=c(1.5,1.5)) 
+
+dev_tree<-tree(formula = good_bad~., split="deviance", data=train)
+
+tree_4leaves<-prune.tree(dev_tree, best=4)
+
+plot(tree_4leaves)
+text(tree_4leaves, pretty=0)
+title("Tree with four leaves, impurity measure: deviance")
+
+dev_fit_final<-predict(tree_4leaves, newdata=test,
+             type="class")
+
+table_dev_final<-table(pred=dev_fit_final, truth=test$good_bad)
+
+error_dev_final<-1-sum(diag(table_dev_final))/sum(table_dev_final)
+final_tree_error<-list(Missclassification_rate_testdata=error_dev_final)
+final_tree_error
+
+
+#2.4
+library(e1071)
+
+nb<-naiveBayes(formula=good_bad~., data=train)
+
+#Train
+nb_fit_train<-predict(nb, newdata=train, type="class")
+#sum(nb_fit_train=="good")
+nb_table_train<-table(pred=nb_fit_train, truth=train$good_bad)
+
+error_nb_train<-1-(sum(diag(nb_table_train))/sum(nb_table_train))
+
+
+#Test
+nb_fit_test<-predict(nb, newdata=test, type="class")
+nb_table_test<-table(pred=nb_fit_test, truth=test$good_bad)
+
+error_nb_test<-1-(sum(diag(nb_table_test))/sum(nb_table_test))
+
+naive_bayes<-list(confusion_matrix_train=nb_table_train, error_rate_train=error_nb_train, 
+      confusion_matrix_test=nb_table_test, error_rate_train=error_nb_test)
+
+naive_bayes
+
+#2.5 train
+nb_fit_raw_train<-predict(nb, newdata=train, type="raw")
+
+nb_fit_raw_train<-as.data.frame(nb_fit_raw_train)
+nb_fit_raw_train$class[nb_fit_raw_train$good>(nb_fit_raw_train$bad*10)]<-"good"
+nb_fit_raw_train$class[nb_fit_raw_train$good<=(nb_fit_raw_train$bad*10)]<-"bad"
+nb_fit_raw_train$class<-as.factor(nb_fit_raw_train$class)
+
+nb_loss_train<-table(pred=nb_fit_raw_train$class, truth=train$good_bad)
+
+#2.5 test
+
+nb_fit_raw_test<-as.data.frame(predict(nb, newdata=test, type="raw"))
+
+nb_fit_raw_test$class[nb_fit_raw_test$good>(nb_fit_raw_test$bad*10)]<-"good"
+nb_fit_raw_test$class[nb_fit_raw_test$good<=(nb_fit_raw_test$bad*10)]<-"bad"
+nb_fit_raw_test$class<-as.factor(nb_fit_raw_test$class)
+
+nb_loss_test<-table(pred=nb_fit_raw_test$class, truth=test$good_bad)
+
+nb_loss_confusion<-list(confusion_matrix_train=nb_loss_train, confusion_matrix_test=nb_loss_test)
+nb_loss_confusion
+```
+

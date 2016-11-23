@@ -1,0 +1,408 @@
+---
+title: "Lab 1 block 2 732A95"
+author: "Anton Persson antpe404"
+date: "20 november 2016"
+output: pdf_document
+---
+# Assignment 1.1-1.2
+I built my own function according to the instructions. When I run the function on the dataset \textit{cube} with knotvector c(2,4) I do get the results shown below.
+
+```{r, echo=F}
+#1.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+cube<-read.csv2("cube.csv", sep=";", header=T)
+#plot(cube$x, cube$y)
+library(ggplot2)
+
+myspline<-function(X, Y, knots){
+  
+  X<-as.data.frame(cbind(Intercept=rep(1, length(X)), X)) #Lägger till intercept
+  
+  for (i in 1:length(knots)){
+   
+      X[,i+2]<- pmax(cube$x-knots[i], 0)
+  }
+all_data<-data.frame(y=Y, X)  
+
+lin_mod<-lm(y~.-Intercept, data=all_data) 
+
+predictions<-predict(lin_mod)
+
+linear_plot<-ggplot(data=all_data)+geom_line(aes(x=X, y=predictions), col="red")+
+  geom_point(aes(x=X, y=predictions), col="red")+geom_point(aes(y=all_data$y, x=all_data$X))+
+  ggtitle("Fitting piecewise linear functions")
+  
+plot(linear_plot)
+
+#return(summary(lin_mod)) Don't need the summary in the report so I delete that.
+}
+
+#1.2
+myspline(X=cube$x, Y=cube$y, knots=c(2,4))
+
+```
+
+The plot returned by the function shows that the quality of fit seems to be good, when I consider that I only used two knots. The knots might not be exactly the values I would've chosen to optimize the fitting neither. For example, if I used the knots as c(1.9, 4,8) the fit would probably have been even better.
+It's a continuous function, a continuous piecewise linear function to be more specific.
+
+\newpage
+
+# Assignment 1.3
+
+When I use smooth.spline() instead of my own function I do get the results shown below.
+
+```{r, echo=F}
+#1.3
+X<-cube$x
+Y<-cube$y
+
+spline_predictions<-predict(smooth.spline(x=X, y=Y))
+
+spline_predictions<-as.data.frame(cbind(x=as.vector(spline_predictions$x),y=as.vector(spline_predictions$y)))
+
+spline_plot<-ggplot()+geom_point(data=spline_predictions, aes(x=x, y=y), col="red")+
+  geom_line(data=spline_predictions, aes(x=x, y=y), col="red")+
+  geom_point(aes(y=cube$y, x=cube$x))+ggtitle("Fitting with smooth.spline()")
+  
+spline_plot
+
+```
+
+The fit made by the smooth.spline() definitely look better according to the plots, it's more exact and catch even the smaller trends in the data. However there is a risk that this is a overfit since it's only been plotted againt the training data (which is all data in this case). Maybe the piecewise linear function would be as good if I got to choose the knots myself, and if this only was the training data and there were another set to be used as test data. Since the observed values look like a combination of three different linear parts, I wouldn't mind using a piecewise linear model at all.
+
+\newpage
+
+# Assignment 2.1
+
+The time series plot of \textit{Mortality} and \textit{Influenza} is shown below.
+
+```{r, echo=F, warning=FALSE, message=FALSE}
+#2.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+flu<-read.csv2("influenza.csv", sep=";", header=T)
+
+plot_flu<-ggplot(data=flu)+geom_line(aes(x=Time, y=Influenza))
+plot_mort<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality))
+
+#install.packages("gridExtra")
+library(gridExtra)
+plot(arrangeGrob(plot_flu, plot_mort, nrow=2))
+```
+
+The variables \textit{Mortality} and \textit{Influenza} seems to correlate, the both have their spikes simultanously, especially during the first ~6 years of the time series. After that there seems to be a few pekas in mortality that doesn't have anything to do with the outburst of influenza. Their respective time series do have similar patterns in general though, which indicate that a additive model would be appropriate.
+
+\newpage
+
+# Assignment 2.2-2.3
+
+I assume that the \textit{Mortality} is normally distributed accodring to the instructions, and define the probabilistic model as
+
+$$g(E [Mortality|Year, week])=\alpha+\beta_1 Year+s_1(Week)$$
+
+The output of the model, created by use of the gam()-function, is shown below.
+
+```{r, echo=FALSE, warning=F, message=F}
+#2.2
+library(mgcv)
+library(nlme)
+
+
+gam_model<-gam(Mortality~Year+s(Week), data=flu,family=gaussian(), method="GCV.Cp")#def ej k
+
+summary(gam_model)#Year inte signi, men smoothingtermen week är signi.
+
+
+#Jag ska report the underlying probabalistic model. Kolla typ slide 22-25 på FL
+#https://liuonline.sharepoint.com/sites/732A95/732A95-2016HT/CourseDocuments/lecture1_bl2.pdf
+
+```
+
+The summary of the model tells me that the linear impact of the variable \textit{Year} is far from significant, meaning that time itself doesn't seem to impact the mortality. The trend of mortality is constant, I can't tell that the \textit{Mortality} is going down, nor up. The smoothing term \textit{Week} on the other side is definitely significant. That means that there are fluctuation in the mortality over the weeks, which is a seasonal trend.
+The smoothing term has an estimated degrees of freedom of 8.587.
+
+\newpage
+
+The seasonal trend is shown in the plot below.
+
+```{r, echo=F}
+#2.3
+plot(gam_model) #Detta är alltså för alla veckor
+```
+
+The plot above tells me what the fluctuation within a year looks like. I conclude that the mortality is definitely higher during the winter, i.e. the first weeks of each year and the last weeks of each year. The mortality is lowest during the summer.
+
+The predicted mortality is plotted versus the observed mortalitys in the plot below.
+
+```{r, echo=F}
+fitted_gam_model<-data.frame(fitted_value=fitted(gam_model))
+
+
+plot_gam_mort<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8)+
+  geom_line(aes(x=Time, y=fitted_gam_model, col="Predicted Mortality"), size=.8)+
+  ggtitle("GAM with spline functions of Week, linear function of Year \n Predicted mortality vs observed mortality")+theme_bw()
+
+plot_gam_mort
+
+```
+
+The plot above confirms what I wrote earlier. It can be seen that the variable \textit{Year} doesn't impact the mortality numbers, since the general trend throughout the time series is constant. There is no general trend, only seasonal trend. The model looks decent, it picks up the fluctuations quite good, but seems to underfit some. The model never catches the peaks in mortality in a good way, which could indicate that I'm missing out on some good explanatory variable.
+
+\newpage
+
+# Assignment 2.4
+
+I decided to make five extra models, except from my original. Two of them have high values of smoothing penalty factor, two have low values, and one has 0 as it's value. The maximum degrees of freedom is set to 51, which is the number of factors of the smoothing term Week -1. The plot containing all six models is shown below. 
+
+
+```{r, echo=F}
+#2.4
+gam_model<-gam(Mortality~Year+s(Week), data=flu,family=gaussian(), method="GCV.Cp") #första modellen
+gam_model_zero<-gam(Mortality~Year+s(Week,k=51, sp=0), data=flu, method="GCV.Cp")
+gam_model_low<-gam(Mortality~Year+s(Week, k=51, sp=-1000), data=flu, method="GCV.Cp")
+gam_model_lowest<-gam(Mortality~Year+s(Week, k=51, sp=-10000), data=flu, method="GCV.Cp")
+gam_model_high<-gam(Mortality~Year+s(Week, k=51, sp=1000), data=flu, method="GCV.Cp")
+gam_model_highest<-gam(Mortality~Year+s(Week, k=51, sp=100000), data=flu, method="GCV.Cp")
+
+plot_ori<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"),size=.8,show.legend=F)+
+  geom_line(aes(x=Time, y=fitted_gam_model, col="Model from ass2.2"), size=.8, show.legend=F)+theme_bw()+ggtitle("Model from ass2.2")
+
+plot_zero<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_zero), col="sp=0, k=51"), size=.8, show.legend=F)+theme_bw()+ggtitle("sp=0, k=51")
+
+plot_low<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_low), col="sp=-1000, k=51"), size=.8, show.legend=F)+theme_bw()+ggtitle("sp=-1000, k=51")
+
+plot_lowest<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_lowest), col="sp=-100000, k=51"), size=.8, show.legend=F)+theme_bw()+ggtitle("sp=-100000, k=51")
+
+plot_high<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_high), col="sp=1000, k=51"), size=.8, show.legend=F)+theme_bw()+ggtitle("sp=1000, k=51")
+
+plot_highest<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_highest), col="sp=100000, k=51"), size=.8, show.legend=F)+theme_bw()+ggtitle("sp=100000, k=51")
+
+#Här är alla i plotmatrix
+plot(arrangeGrob(plot_ori,plot_zero,plot_lowest,plot_low,plot_high,plot_highest, nrow=3))
+
+```
+
+
+The relationship between the smoothing penalty factor and the degrees of freedom for a model can be expressed as
+
+$$df_\lambda =  \frac{1}{1 + \lambda d_k}$$
+
+
+From the formula I conclude that when $\lambda$ increases, the number of degrees of freedom decreases and the other way around. This can be seen in the plots. When $\lambda=100000$ (bottom right) the model gets very simple, and obviosly underfits the data. When $\lambda$ is very small, i.e. a very negative number, it should allow the model to have a high number of degrees of freedom. That is, a complex model. That can be seen in the plots above as well, for example the middle left. The model where $\lambda=0$ generates the highest mark of degrees of freedom. It's also the model that looks most like the model from assignment 2.2.
+
+\newpage
+
+# Assignment 2.5
+
+The requested plot of the residuals from the model in assignment 2.2 versus the observed \textit{Influenza} values are shown below.
+
+```{r, echo=FALSE}
+#2.5
+flu_vs_resid_plot<-ggplot(data=flu)+geom_line(aes(y=Influenza, x=Time, col="Influenza"), size=.8)+
+  geom_line(aes(x=flu$Time, y=gam_model$residuals, col="Residuals from \n Mortality~Year+s(Week)"))
+
+flu_vs_resid_plot
+
+```
+
+Yes, the residuals of the model are correlated with the outbreaks of influenza. When the residuals are at their maximum, i.e. when the observed mortalitity is much higher then the model
+predicts, then the influenza peaks as well, in general. That's specially valid through the first 
+five years of the time series, which I concluded in assignment 2.1 as well. After that there's a few outburts of positive residuals in mortality that doesn't respond to peaks in influenza. 
+This indicates that influenza would be a reasonable explanatory variable to predict the mortality. This might even be the variable missing to make a really good model! Yay! 
+
+\newpage
+
+# Assignment 2.6
+
+The requested model fits my conclusions in assignment 2.5. The output of the gam-model where Mortality responds to smoothing terms of the features \textit{Year, Week} and \textit{Influenza} is presented below.
+
+```{r, echo=FALSE}
+#2.6
+gam_model_26<-gam(Mortality~s(Year, k=length(levels(as.factor(flu$Year)))-1)+
+                    s(Week, k=length(levels(as.factor(flu$Week)))-1)+
+                    s(Influenza, k=length(levels(as.factor(flu$Influenza)))-1), data=flu, family=gaussian(), method="GCV.Cp")
+#k sätts till antalet factors för varje variabel -1. Dvs 8 för år, 51 för weeks etc.
+
+summary(gam_model_26)
+#Yes, Influenza påverkar. Signifikant som fan.
+
+
+```
+
+The output tells me that the smooting term of the \textit{Influenza} variable is significant. The variable \textit{Year}, which represent the passage of time, is stil not significant. The model explains 85.1 % of the deviance, compared to 66.8 % in the the model without the \textit{Influenza} variable in assignment 2.3. That's a big upgrade.
+
+The plot of the models' predicted mortality versus the observed mortality is shown below.
+
+```{r, echo=FALSE}
+
+fitted_gam_model_26<-data.frame(fitted_value=fitted(gam_model_26))
+
+plot_gam_26<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality, col="Observed"), size=.8)+
+  geom_line(aes(x=Time, y=fitted_gam_model_26, col="Predicted"), size=.8)+theme_bw()+
+  ggtitle("GAM with spline functions of Week, Year and Influenza \n Predicted mortality vs observed mortality")
+
+plot_gam_26
+
+```
+
+This model definitely seems to be better than the previous models. It catches the big swings in mortality much better, compared to the corresponding plot in assignment 2.3 for example. In 2.3, I didn't use the variable \textit{Influenza} at all, why the model couldn't explain the most dramatic peaks in mortality.
+
+\newpage
+
+
+#Appendix
+
+Here's the R code used to solve the programming in this lab.
+
+```{r, echo=TRUE, results="hide", eval=FALSE}
+#1.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+cube<-read.csv2("cube.csv", sep=";", header=T)
+#plot(cube$x, cube$y)
+
+myspline<-function(X, Y, knots){
+  
+  X<-as.data.frame(cbind(Intercept=rep(1, length(X)), X)) #Lägger till intercept
+  
+  for (i in 1:length(knots)){
+   
+      X[,i+2]<- pmax(cube$x-knots[i], 0)
+  }
+all_data<-data.frame(y=Y, X)  
+
+lin_mod<-lm(y~.-Intercept, data=all_data) 
+
+predictions<-predict(lin_mod)
+
+library(ggplot2)
+linear_plot<-ggplot(data=all_data)+geom_line(aes(x=X, y=predictions), col="red")+
+  geom_point(aes(x=X, y=predictions), col="red")+geom_point(aes(y=all_data$y, x=all_data$X))+
+  ggtitle("Fitting piecewise linear functions")
+  
+plot(linear_plot)
+
+#return(summary(lin_mod)) Don't need the summary in the report so I delete that.
+}
+
+#1.2
+myspline(X=cube$x, Y=cube$y, knots=c(2,4))
+
+#1.3
+X<-cube$x
+Y<-cube$y
+
+spline_predictions<-predict(smooth.spline(x=X, y=Y))
+
+spline_predictions<-as.data.frame(cbind(x=as.vector(spline_predictions$x),
+              y=as.vector(spline_predictions$y)))
+
+spline_plot<-ggplot()+geom_point(data=spline_predictions, aes(x=x, y=y), col="red")+
+  geom_line(data=spline_predictions, aes(x=x, y=y), col="red")+
+  geom_point(aes(y=cube$y, x=cube$x))+ggtitle("Fitting with smooth.spline()")
+  
+spline_plot
+
+#2.1
+setwd("C:/Users/Anton/Documents/732A95 Machine learning/data")
+flu<-read.csv2("influenza.csv", sep=";", header=T)
+
+plot_flu<-ggplot(data=flu)+geom_line(aes(x=Time, y=Influenza))
+plot_mort<-ggplot(data=flu)+geom_line(aes(x=Time, y=Mortality))
+
+#install.packages("gridExtra")
+library(gridExtra)
+plot(arrangeGrob(plot_flu, plot_mort, nrow=2))
+
+#2.2
+library(mgcv)
+library(nlme)
+
+gam_model<-gam(Mortality~Year+s(Week), data=flu,family=gaussian(), method="GCV.Cp")#def ej k
+
+summary(gam_model)#Year inte signi, men smoothingtermen week är signi.
+
+#2.3
+plot(gam_model) #Detta är alltså för alla veckor
+
+fitted_gam_model<-data.frame(fitted_value=fitted(gam_model))
+
+
+plot_gam_mort<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8)+
+  geom_line(aes(x=Time, y=fitted_gam_model, col="Predicted Mortality"),
+            size=.8)+theme_bw()
+
+plot_gam_mort
+
+#2.4
+gam_model<-gam(Mortality~Year+s(Week), data=flu,family=gaussian(), method="GCV.Cp") #första modellen
+gam_model_zero<-gam(Mortality~Year+s(Week,k=51, sp=0), data=flu, method="GCV.Cp")
+gam_model_low<-gam(Mortality~Year+s(Week, k=51, sp=-1000), data=flu, method="GCV.Cp")
+gam_model_lowest<-gam(Mortality~Year+s(Week, k=51, sp=-10000), data=flu, method="GCV.Cp")
+gam_model_high<-gam(Mortality~Year+s(Week, k=51, sp=1000), data=flu, method="GCV.Cp")
+gam_model_highest<-gam(Mortality~Year+s(Week, k=51, sp=100000), data=flu, method="GCV.Cp")
+
+plot_ori<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"),size=.8,show.legend=F)+
+  geom_line(aes(x=Time, y=fitted_gam_model, col="Model from ass2.2"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("Model from ass2.2")
+
+plot_zero<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_zero), col="sp=0, k=51"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("sp=0, k=51")
+
+plot_low<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_low), col="sp=-1000, k=51"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("sp=-1000, k=51")
+
+plot_lowest<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_lowest), col="sp=-100000, k=51"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("sp=-100000, k=51")
+
+plot_high<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_high), col="sp=1000, k=51"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("sp=1000, k=51")
+
+plot_highest<-ggplot(data=flu)+
+  geom_line(aes(x=Time, y=Mortality, col="Observed mortality"), size=.8, show.legend=F)+
+  geom_line(aes(x=Time, y=fitted(gam_model_highest), col="sp=100000, k=51"), size=.8, show.legend=F)+
+  theme_bw()+
+  ggtitle("sp=100000, k=51")
+
+#Här är alla i plotmatrix
+plot(arrangeGrob(plot_ori,plot_zero,plot_lowest,plot_low,plot_high,plot_highest, nrow=3))
+
+#2.5
+flu_vs_resid_plot<-ggplot(data=flu)+
+  geom_line(aes(y=Influenza, x=Time, col="Influenza"), size=.8)+
+  geom_line(aes(x=flu$Time, y=gam_model$residuals,
+                col="Residuals from \n Mortality~Year+s(Week)"))
+
+flu_vs_resid_plot
+
+#2.6
+gam_model_26<-gam(Mortality~s(Year, k=length(levels(as.factor(flu$Year)))-1)+
+                    s(Week, k=length(levels(as.factor(flu$Week)))-1)+
+                    s(Influenza, k=length(levels(as.factor(flu$Influenza)))-1), 
+                  data=flu, family=gaussian(), method="GCV.Cp")
+#k sätts till antalet factors för varje variabel -1. Dvs 8 för år, 51 för weeks etc.
+
+summary(gam_model_26)
+#Yes, Influenza påverkar. Signifikant som fan.
+
+
+```
+

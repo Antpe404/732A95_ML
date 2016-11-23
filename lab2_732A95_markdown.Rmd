@@ -1,0 +1,432 @@
+---
+title: "Lab 2 732A95 Introduction to machine learning"
+author: "Anton Persson antpe404"
+date: "14 november 2016"
+output: pdf_document
+---
+# Assignment 1
+
+I built my own function, that generates all possible combinations of features and splits the data into \textit{folds} different datasets. The result when the data from the \textit{swiss} dataset is used as in the lab instructions is shown below.
+
+```{r, echo=FALSE}
+#Ass 1
+best_subset_selection <- function(X, Y, folds) {
+  
+  n<-dim(X)[1]
+  
+  X<-cbind(rep(1, n), X)#Intercept-ettorna för X-matrisen
+  colnames(X)[1]<-"Intercept"
+  X<-as.matrix(X)
+  
+  #randomizar:
+  set.seed(12345)
+  slump<-sample(1:dim(X)[1])
+  X<-X[slump,]
+  Y<-Y[slump]
+  #--
+  Y<-as.matrix(Y)
+  
+  p<-dim(X)[2]
+  
+  all_combos<-lapply(1:(p-1), function(i) combn(1:(p-1), i, simplify=F))
+  all_combos<-unlist(all_combos, recursive=F) #This is all possible combos of variables(features)
+  
+  
+  CV<-integer(0) #Här vill jag sedan lagra de olika CV-scoresen för de olika subsetsen.
+  resmat<-matrix(ncol=length(all_combos), nrow=folds) #Här vill jag lägga in resultaten för olika antal features.
+  features<-integer(0)
+  
+  
+  for (j in 1:length(all_combos)){
+    for (i in 1:folds){
+      
+      test<-X[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), c(1, unlist(all_combos[j])+1)] #+1 eftersom jag har interceptcol
+      train<-X[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))),c(1, unlist(all_combos[j])+1)] #Detta blir träning
+      Y_test<-Y[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
+      Y_train<-Y[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
+      
+      betahat<-solve(t(train)%*%train) %*% t(train) %*% Y_train #Skattar modellen på träningsdatan
+      yhat <- test %*% betahat  #Testar på den nya datan, dvs skattar nya datan.
+      resid_err <- Y_test - yhat #Och tar fram felen.
+      CV[i]<-sum(resid_err**2)
+      
+      
+    }
+    resmat[,j]<-CV
+    features[j]<-length(unlist(all_combos[j]))
+  }
+  resmat<-as.data.frame(resmat)
+  CV_score<-apply(resmat, 2, mean)
+  data<-as.data.frame(cbind(CV_score, features))
+  data$combo<-all_combos
+  
+  library(ggplot2)
+  cv_plotten<-ggplot(data=data)+geom_point(aes(x=features, y=CV_score), size=2)+
+    theme_bw()+ylim(c(min(data$CV_score)-500,max(data$CV_score)+500))+
+    ggtitle("CV scores for all models versus it's number of features")+
+    geom_hline(yintercept=min(data$CV_score), col="red")
+  
+  optimal_subset<-data[data$CV_score==min(data$CV_score),]
+  
+  plot(cv_plotten)
+  
+  return(optimal_subset)
+}
+  
+best_subset_selection(X=swiss[,2:6], Y=swiss[,1], folds=5)
+
+
+```
+
+For the plot above I conclude that the model with all five features and one of the models with four features are clearly the best options, and they are almost equally good. These are represented by the dots getting crossed by the red line. One of the models with three features are almost as good as those two. If you look closely, you can see that the red line that indicates the lowest CV-score seems to belong to one of the four features models.
+The models with ony one explanatory variable has higher variance among the models, and higher CV scores generally. The models with two included features also seems to be worse models than the the models with more features.
+
+The exact model, to which the red line responds, is also presented above. It states that the best
+model is a model with four features, namely X1, X3, X4 and X5. That is the variables \textit{Agriculture, Education, Catholic} and \textit{Infant Mortality}. The variable \textit{Fertility} is the response variable. I do think it sounds reasonable, even though I have a hard time describing why the share of males involved in the agriculture should impact the fertility. I think that my layman hypothesis would say that the two variables Agriculture and Examination are the the variables with lowest impact. I can't really see why the share of draftees receiving the highest mark on the army examination would impact the fertility measure, why I find it reasonable that that variable is excluded from the model.
+
+\newpage
+
+#Assignment 2
+
+Below is the report for the second assignment. 
+
+##2.1
+
+The required plot is presented below, where \textit{Moisture} is plotted versus \textit{Protein}.
+
+```{r, echo=FALSE}
+#2.1
+tecator<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/data/tecator.csv", sep=";", header=T)
+plot(tecator$Moisture, tecator$Protein, xlab="Moisture", ylab="Protein")#Decent, yes, but not perfect.
+title("Protein vs Moisture")
+
+```
+
+The scatterplot above shows a quite linear relationship between the two variables. Obviously there are some outliers, the relationship isn't perfectly linear, but I would definitely say that a linear model would work.
+
+\newpage
+
+##2.2
+The probabalistic model looks something like
+
+$$p(y|x,w)=N(w_0+\sum_{i=1}^k(w_ix^i), \sigma^2), i=1,...,k$$
+
+and since the residuals are normally distributed with the expected value 0, we do want to minimize the MSE. MSE is supposed to be the best unbiased estimator for the normal distribution.
+
+
+##2.3
+
+The six different models for the train and test respectively was made in R, resulting in the plot that is presented below. 
+
+```{r, echo=FALSE}
+#2.3
+set.seed(12345)
+id<-sample(1:nrow(tecator), floor(nrow(tecator)*.5))
+train<-tecator[id,103:104]
+test<-tecator[-id,103:104]
+
+#lm(Moisture~Protein+I(Protein**2)+I(Protein**3)+I(Protein**4)+I(Protein**5)+I(Protein**6), data=train)
+power<-1:6
+MSE_train<-integer(0)
+MSE_test<-integer(0)
+for (i in power){
+ model<- lm(formula=Moisture ~ poly(x = Protein, degree = i), data=train)
+MSE_train[i]<-mean((resid(model)**2))
+
+MSE_test[i]<-mean((predict(model, newdata=test)-test$Moisture)**2)
+}
+
+All_MSE<-as.data.frame(cbind(MSE_train, MSE_test, power))
+
+library(reshape2)
+
+mdata <- melt(All_MSE, id="power")
+colnames(mdata)<-c("Power", "data","MSE")
+
+library(ggplot2)
+ggplot(data=mdata)+geom_point(aes(x=Power, y=MSE, colour=data))+theme_bw()
+
+```
+
+The plot above indicates that the linear model without higher degree of polynomials is the best. The model with only a first degree polynomial has the lowest MSE for the test set. The MSE for all other powers of the polynom is worse for the test data. It seems that the more polynomial terms I include in the model, the more I overfit. The MSE for the training set goes down, but it increases for the test set. It's somehow strange that the training set has higher MSE than the test set in the case where I only have the first degree polynomial. I guess that is because of the randomizing seed that splits the data into training and test. 
+
+In this case, this means that I do have low variance and high bias when the power equals 1. The more complex the model gets, i.e. the higher power I use in my model, the variance increases and the bias decreases.
+
+\newpage
+
+##2.4
+
+The result for the variable selection among all possible explanatory variables is shown below.
+
+```{r, echo=FALSE}
+#2.4
+library(MASS)
+data<-tecator[,c(2:102)]
+
+lin_mod <- lm(Fat ~ . , data=data)
+
+aic <- stepAIC(lin_mod, direction="both", trace=FALSE)
+#aic$coefficients
+#aic
+number_of_selected_variables<-length(aic$coefficients)-1 #63 var+intercept 
+number_of_selected_variables
+
+```
+
+The model chosen by stepAIC contains the intercept and 63 of the features in the data.
+
+##2.5
+
+I started out by splitting the data into two different data set, one with only the explanatory variables, and one with the response. I continue by using the glmnet()-function with alhpa=0, which gives me the ridge penalty. The plot for how the coefficients depends on the log lambda is shown below.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#2.5
+
+#install.packages("glmnet")
+library(glmnet)
+
+covariates<-scale(data[,1:100])
+response<-scale(data[,101]) #101 är fat.
+
+ridge_mod<-glmnet(as.matrix(covariates),
+              response, alpha=0,family="gaussian", standardize=FALSE) #alpha=0 ger mig ridge penalty.
+
+plot(ridge_mod, xvar="lambda", label=T,xlab=expression(log(lambda)))
+
+```
+
+As can be seen above, the values of the coefficients converges towards 0 when $\lambda$ increases, but they doesn't get deleted (becomes equal to 0) which is a difference compared to the Lasso model.
+
+\newpage
+
+##2.6
+
+The same procedure but with lasso instead of ridge is shown below.
+
+```{r, echo=FALSE}
+#2.6
+lasso_mod<-glmnet(covariates, response, alpha=1,family="gaussian", standardize=FALSE) #alpha=1 ger #mig lasso penalty.
+
+plot(lasso_mod, xvar="lambda", label=T, xlab=expression(log(lambda)))
+
+```
+
+The difference between Lasso and Ridge models is that the Lasso model actually delete some variables completely by setting them to 0. That can be seen in the plot above. The number of features decreases as $\lambda$ increases, while they "only" converges towards 0 when I'm using a ridge model. 
+
+
+##2.7
+
+I realised that I could use the cv.glmnet-function to cross-validate the Lasso model. The optimal lambda is shown below.
+
+```{r, echo=FALSE}
+#2.7
+set.seed(12345) #CV is random
+CV_lasso_mod<-cv.glmnet(x=covariates, y=response, type.measure="deviance", alpha=1, standardize=F)#enligt en googlesökning på glmnet + cv är detta da code.
+
+#optimal lambda should be
+optimal_lambda_CV_lasso<-CV_lasso_mod$lambda.min
+
+optimal_lambda_CV_lasso
+
+```
+
+The number of features that were used in my findings is is presented below.
+
+```{r, echo=F}
+number_of_features_CV_lasso<-sum(coef(CV_lasso_mod, s="lambda.min")!=0)-1 #-1 to exclude intercept
+
+number_of_features_CV_lasso
+```
+
+As you can see, 14 variables are used in the cross validated lasso model.
+Obviously, most of the features are deleted, i.e. are getting set to exactly 0. The model only uses 14 variables, why the rest of the variables is excluded.
+
+The plot of the CV scores' dependence of $\lambda$ is presented below.
+
+```{r, echo=F}
+test<-as.data.frame(cbind(lambda=CV_lasso_mod$lambda,CV=CV_lasso_mod$cvm))
+
+plot(log(test$lambda), test$CV, xlab=expression(log(lambda)), ylab="CV score")
+title("CV score versus log lambda")
+
+```
+
+The plot above shows how the CV-score, i.e. the mean error, increases when $\lambda$ increases.
+As we can see in the plot in assignment 2.6, the number of features included in the models decreases as $\lambda$ increases. This means, in other words, that the model gets underfitted when the $\lambda$ gets too large. The larger $\lambda$ gets, the fewer number of features remains in the model (or more specific, the more features gets excluded), the higher the mean error gets.
+
+
+##2.8
+
+The Lasso model reduces the number of features a lot more than the stepAIC-function does. I suppose that's a good way for the Lasso model to penalize models and avoid them from over fitting. Except from that, I've made some comments about the differences between the models in the previous assignments.
+
+
+\newpage
+
+
+
+
+
+
+
+#Appendix
+
+The R-code used in this lab is presented below.
+
+```{r, echo=TRUE, results="hide", eval=FALSE}
+#Ass 1
+best_subset_selection <- function(X, Y, folds) {
+  
+  n<-dim(X)[1]
+  
+  X<-cbind(rep(1, n), X)#Intercept-ettorna för X-matrisen
+  colnames(X)[1]<-"Intercept"
+  X<-as.matrix(X)
+  
+  #randomizar:
+  set.seed(12345)
+  slump<-sample(1:dim(X)[1])
+  X<-X[slump,]
+  Y<-Y[slump]
+  #--
+  Y<-as.matrix(Y)
+  
+  p<-dim(X)[2]
+  
+  all_combos<-lapply(1:(p-1), function(i) combn(1:(p-1), i, simplify=F))
+  all_combos<-unlist(all_combos, recursive=F) #This is all possible combos of variables(features)
+  
+  
+  CV<-integer(0) #Här vill jag sedan lagra de olika CV-scoresen för de olika subsetsen.
+  resmat<-matrix(ncol=length(all_combos), nrow=folds) 
+  #Här vill jag lägga in resultaten för olika antal features.
+  features<-integer(0)
+  
+  
+  for (j in 1:length(all_combos)){
+    for (i in 1:folds){
+      
+      test<-X[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), 
+              c(1, unlist(all_combos[j])+1)] #+1 eftersom jag har interceptcol
+      train<-X[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))),
+               c(1, unlist(all_combos[j])+1)] #Detta blir träning
+      Y_test<-Y[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
+      Y_train<-Y[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
+      
+      betahat<-solve(t(train)%*%train) %*% t(train) %*% Y_train #Skattar modellen på träningsdatan
+      yhat <- test %*% betahat  #Testar på den nya datan, dvs skattar nya datan.
+      resid_err <- Y_test - yhat #Och tar fram felen.
+      CV[i]<-sum(resid_err**2)
+      
+      
+    }
+    resmat[,j]<-CV
+    features[j]<-length(unlist(all_combos[j]))
+  }
+  resmat<-as.data.frame(resmat)
+  CV_score<-apply(resmat, 2, mean)
+  data<-as.data.frame(cbind(CV_score, features))
+  data$combo<-all_combos
+  
+  library(ggplot2)
+  cv_plotten<-ggplot(data=data)+geom_point(aes(x=features, y=CV_score), size=2)+
+    theme_bw()+ylim(c(min(data$CV_score)-500,max(data$CV_score)+500))+
+    ggtitle("CV scores for all models versus it's number of features")+
+    geom_hline(yintercept=min(data$CV_score), col="red")
+  
+  optimal_subset<-data[data$CV_score==min(data$CV_score),]
+  
+  plot(cv_plotten)
+  
+  return(optimal_subset)
+}
+  
+best_subset_selection(X=swiss[,2:6], Y=swiss[,1], folds=5)
+
+
+#2.1
+tecator<-read.csv2("C:/Users/Anton/Documents/732A95 Machine learning/data/tecator.csv",
+                   sep=";", header=T)
+plot(tecator$Moisture, tecator$Protein, xlab="Moisture", ylab="Protein")
+title("Protein vs Moisture")
+
+#2.3
+set.seed(12345)
+id<-sample(1:nrow(tecator), floor(nrow(tecator)*.5))
+train<-tecator[id,103:104]
+test<-tecator[-id,103:104]
+
+power<-1:6
+MSE_train<-integer(0)
+MSE_test<-integer(0)
+for (i in power){
+ model<- lm(formula=Moisture ~ poly(x = Protein, degree = i), data=train)
+MSE_train[i]<-mean((resid(model)**2))
+
+MSE_test[i]<-mean((predict(model, newdata=test)-test$Moisture)**2)
+}
+
+All_MSE<-as.data.frame(cbind(MSE_train, MSE_test, power))
+
+library(reshape2)
+
+mdata <- melt(All_MSE, id="power")
+colnames(mdata)<-c("Power", "data","MSE")
+
+library(ggplot2)
+ggplot(data=mdata)+geom_point(aes(x=Power, y=MSE, colour=data))+theme_bw()
+
+#2.4
+library(MASS)
+data<-tecator[,c(2:102)]
+
+lin_mod <- lm(Fat ~ . , data=data)
+
+aic <- stepAIC(lin_mod, direction="both", trace=FALSE)
+
+number_of_selected_variables<-length(aic$coefficients)-1 #63 var+intercept 
+number_of_selected_variables
+
+#2.5
+
+#install.packages("glmnet")
+library(glmnet)
+
+covariates<-scale(data[,1:100])
+response<-scale(data[,101]) #101 är fat.
+
+ridge_mod<-glmnet(as.matrix(covariates),
+response, alpha=0,family="gaussian", standardize=FALSE) #alpha=0 ger mig ridge penalty.
+
+plot(ridge_mod, xvar="lambda", label=T,xlab=expression(log(lambda)))
+
+#2.6
+lasso_mod<-glmnet(covariates, response, alpha=1,
+          family="gaussian", standardize=FALSE) #alpha=1 ger #mig lasso penalty.
+
+plot(lasso_mod, xvar="lambda", label=T, xlab=expression(log(lambda)))
+
+#2.7
+set.seed(12345) #CV is random
+CV_lasso_mod<-cv.glmnet(x=covariates, y=response,
+        type.measure="deviance", alpha=1, standardize=F)
+#enligt en googlesökning på glmnet + cv är detta da code.
+
+#optimal lambda should be
+optimal_lambda_CV_lasso<-CV_lasso_mod$lambda.min
+
+optimal_lambda_CV_lasso
+
+
+number_of_features_CV_lasso<-sum(coef(CV_lasso_mod, s="lambda.min")!=0)-1 #-1 to exclude intercept
+
+number_of_features_CV_lasso
+
+test<-as.data.frame(cbind(lambda=CV_lasso_mod$lambda,CV=CV_lasso_mod$cvm))
+
+plot(log(test$lambda), test$CV, xlab=expression(log(lambda)), ylab="CV score")
+title("CV score versus log lambda")
+
+```
+
+
+
