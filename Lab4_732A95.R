@@ -7,7 +7,7 @@ state<-read.csv2("data/State.csv", sep=";", header=T)
 state<-state[order(state$MET, decreasing=T), ] #Reordrar efter MET
 plot(state$MET, state$EX, xlab="MET", ylab="EX")
 #What model can be appropriate?
-#-Appropriate for what? But prolly like a pline maybe? Maybe linear piecewise with one knot.
+#-Appropriate for what? But prolly like a spline maybe? Maybe linear piecewise with one knot.
 
 #Assignment 2
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
@@ -20,6 +20,7 @@ sprintf("%2.4f",lambda/sum(lambda)*100)
 
 #############Ass 2.1, egen PCA
 nir2<-as.data.frame(scale(nir[, 1:126])) #Tar bort y-variablen här
+Y<-as.data.frame(scale(nir[, 127])) #Lägger Y här.
 covar<-cov(nir2)#Cov av X-variablerna
 eigen_stuff<-eigen(covar)
 eigenvalues<-(eigen_stuff$values)
@@ -102,6 +103,24 @@ colnames(Z_ica)<-c("IC1", "IC2")
 par(mfrow=c(1,1))
 plot(x=Z_ica$IC1, y=Z_ica$IC2, xlab=colnames(Z_ica)[1], ylab=colnames(Z_ica)[2], main="The scores for the two latent features, ICA")
 #Looks the same but mirrored in my case bc of the negative PC1 in my PCA.
+
+##################2.4 PCR
+install.packages("pls")
+library(pls)
+
+#Detta nedan kan vara helt fel.
+pcr_data<-cbind(Y, Z)
+my_pcr<-lm(V1~PC1+PC2, data=pcr_data)
+summary(my_pcr)
+my_pcr$coefficients
+my_pcr$fitted.values
+
+#Detta är PCR enligt slides.
+pcr_model<-pcr(Viscosity ~ ., data=nir, scale=TRUE, )
+pcr_model2<-pcr(Viscosity ~ ., data=nir, scale=TRUE, validation="CV")
+pcr_model
+summary(pcr_model)
+pcr_model$scores
 
 #-------------------------------------
 DDZ<-scale(y) 
