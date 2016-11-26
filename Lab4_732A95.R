@@ -61,7 +61,7 @@ grid()
 plot(U[,2], main="Traceplot PC2, it's eigenvector", ylab="value")
 grid()
 #############2.3
-install.packages("fastICA")
+#install.packages("fastICA")
 library(fastICA)
 fastICA(X, 2, alg.typ = "parallel", fun = "logcosh", alpha = 1,
         method = "R", row.norm = FALSE, maxit = 200, tol = 0.0001, verbose = TRUE) 
@@ -105,22 +105,64 @@ plot(x=Z_ica$IC1, y=Z_ica$IC2, xlab=colnames(Z_ica)[1], ylab=colnames(Z_ica)[2],
 #Looks the same but mirrored in my case bc of the negative PC1 in my PCA.
 
 ##################2.4 PCR
-install.packages("pls")
+#install.packages("pls")
 library(pls)
 
 #Detta nedan kan vara helt fel.
-pcr_data<-cbind(Y, Z)
-my_pcr<-lm(V1~PC1+PC2, data=pcr_data)
-summary(my_pcr)
-my_pcr$coefficients
-my_pcr$fitted.values
+#pcr_data<-cbind(Y, Z)
+#my_pcr<-lm(V1~PC1+PC2, data=pcr_data)
+#summary(my_pcr)
+#my_pcr$coefficients
+#my_pcr$fitted.values
 
 #Detta är PCR enligt slides.
-pcr_model<-pcr(Viscosity ~ ., data=nir, scale=TRUE, )
-pcr_model2<-pcr(Viscosity ~ ., data=nir, scale=TRUE, validation="CV")
+set.seed(12345)
+#pcr_model2<-pcr(Viscosity ~ ., data=nir, scale=TRUE )
+pcr_model<-pcr(Viscosity ~ ., data=nir, scale=TRUE, validation="CV")
 pcr_model
+MSEP(pcr_model)#Detta är vad validationplotten plottar
+
+#----------------------
+#Försök att ta fram värdena i MSEP(pcr_model). Går dåligt. Listor.
+#Vill ha fram min.
+CV_adjCV<-MSEP(pcr_model)
+min(CV_adjCV)
+CV_adjCV[1:length(CV_adjCV)]
+min(CV_adjCV[1:length(CV_adjCV)])
+CV_adjCV<-unlist(CV_adjCV)
+min(CV_adjCV)
+CV_adjCV<-as.vector(CV_adjCV)
+CV_adjCV
+unlist(MSEP(pcr_model))
+as.matrix(MSEP(pcr_model))
+min(MSEP(pcr_model))
+
 summary(pcr_model)
+summary(pcr_model)
+summary(pcr_model)[1]
+summary(pcr_model)[2]
+
+
+pcr_model$terms
+pcr_model$Yloadings
+pcr_model$coefficients
+pcr_model$loadings
 pcr_model$scores
+
+#Detta är att ta fram dem själv
+egen_cv<-crossval(pcr_model)
+egen_cv
+summary(egen_cv)
+#---------------------
+
+
+validationplot(pcr_model,val.type="MSEP", xaxt="n") #xaxt tar bort x-axeln
+axis(1, at = seq(0, 120, by = 10), las=1)
+#abline(h=min()) Detta lyckas jag ej få fram.
+#Inte säker på vad detta är, men ngnstans mellan 20/40?
+#28 om man är exakt, kan man se om man tittar i MSEP(pcr_model)
+plot(MSEP(pcr_model))
+
 
 #-------------------------------------
 DDZ<-scale(y) 
@@ -130,3 +172,26 @@ DDcov<-cov(DDZ)#kovarianserna av de standardiserade pendelvariablerna
 sum(diag(DDcov))
 Egen<-eigen(DDcov)$values
 EV<-eigen(DDcov)$vector[,1]#Tar ut f?rsta kol ur matrisen med egenvektorer.
+
+#Rasmus
+library(reshape2)
+library(ggplot2)
+set.seed(12345)
+pcrfit <- pcr(Viscosity ~ ., data=nir, scale=TRUE)
+cvpcrfit <- crossval(pcrfit, segments=10, segment.type="random")
+## ---- end-of-assign2-4
+
+## ---- assign2-4-MSEP
+cv_scores <- t(matrix(MSEP(cvpcrfit)$val, nrow=2))
+plot_data <- data.frame(cbind(1:ncol(nir), cv_scores))
+colnames(plot_data) <- c("Components", "CV", "adjCV")
+plot_data <- melt(plot_data, id="Components", variable_name="Measure")
+names(plot_data)[ncol(plot_data)] <- "MSEP"
+xlimits <- seq(0, ncol(nir), by=5)
+ylimits <- seq(0, max(plot_data$MSEP) + 0.05, by=0.05)
+
+ggplot(plot_data) +
+  geom_line(aes(x=Components, y=MSEP, color=variable), size=1) +
+  scale_x_discrete(limits=xlimits) +
+  scale_y_continuous(breaks=ylimits, labels=ylimits, limits=c(0, max(plot_data$MSEP)))
+
