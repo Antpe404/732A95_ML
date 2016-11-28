@@ -28,7 +28,7 @@ text(tree_3leaves, pretty=0)
 #Inte säker på vad han vill att jag ska plotta här
 
 plot(state$MET, state$EX) #Originaldata
-hist(predict(tree_3leaves)) #Histo predicted
+#hist(predict(tree_3leaves)) #Histo predicted
 plot(state$MET,predict(tree_3leaves)) #scatter predricted
 #the quality of the fit obviously doesn't look super, but at least I can se the pattern with high
 #values to the left, lower in the moddle and medium to the right. It's a underfit model however, its' 
@@ -75,7 +75,7 @@ bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
 bootstrap_res
 
 #Prunat till 3 löv
-func_tree<-function(data, ind){
+func_CI_tree<-function(data, ind){
   data1<-data[ind,]# extract bootstrap sample
   trees_3<-prune.tree(tree(formula=EX~MET, data=data1, minsize=8, split="deviance"), best=3) 
   #fit pruned tree model. I make the tree and prune it in the same code line.
@@ -83,10 +83,10 @@ func_tree<-function(data, ind){
   return(priceP)
 }
 set.seed(12345)
-bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
-bootstrap_res
+bootstrap_CI<-boot(data=state, statistic=func_CI_tree, sim="ordinary", R=1000)
+bootstrap_CI
 
-CI<-envelope(bootstrap_res, level=.95)
+CI<-envelope(bootstrap_CI, level=.95)
 
 plot(state$MET,state$EX) #originaldata
 points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
@@ -102,6 +102,75 @@ points(state$MET, CI$point[2,], col="green", type="l")
 #The result from assignment 1.2, which is the red line in th eplot above, doesn't seem very reliable.
 #The confidant band is broad, and the confident band is supposed to show where the true value of EX 
 #appeards according to MET. It's not supposed to cover 95 % of the observations.
+
+###############################1.4---------------------------------------------------
+
+
+##################Det ovan är enligt slide 32, men fattar inte riktigt vad rng är där.
+#Provar nedanför enligt slide 29 ist.
+#Update: Tror nu att vi ska använda först enligt s29 för confident band, sen ny run enligt s 32 för
+#pred band
+
+mle<-tree_3leaves
+
+#Börjar med min random generator
+random_gen<-function(data, mle){
+  data1<-data.frame(EX=state$EX, MET=state$MET)
+  n=nrow(data1)
+  data1$EX<-rnorm(n=n, mean=predict(tree_3leaves, newdata=data1), sd=sd(residuals(tree_3leaves)))
+  return(data1)
+}
+
+#Men motsvarande f1 enligt slide 29
+funk_CI_tree<-function(state){
+  regtrees<-tree(formula=EX~MET, data=state, minsize=8, split="deviance") #fit tree model
+  trees_3<-prune.tree(regtrees, best=3)
+  preds<-predict(trees_3, newdata=state)
+  return(preds)
+}
+
+set.seed(12345)
+bootstrap_CI<-boot(data=state, statistic=funk_CI_tree,
+                   sim="parametric", R=1000, mle=tree_3leaves, ran.gen = random_gen) 
+
+interval_CI<-envelope(bootstrap_CI, level=.95)
+
+plot(state$MET,state$EX) #originaldata
+points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
+#CI$point[1,] Detta är upper och CI$point[2,] lower
+#points(state$MET, interval$overall[1,], col="green", type="l") #Pred upper
+#points(state$MET, interval$overall[2,], col="green", type="l") #Pred lower
+points(state$MET, interval_CI$point[1,], col="blue", type="l") #CI upper
+points(state$MET, interval_CI$point[2,], col="blue", type="l") #CI lower
+
+#Fortsätter nu med att göra PRED INTERVAL enligt slide 32.
+
+funk_PI_tree<-function(state){
+  regtrees<-tree(formula=EX~MET, data=state, minsize=8, split="deviance") #fit tree model
+  
+  trees_3<-prune.tree(regtrees, best=3) #prunes tree tol 3 leaves
+  preds<-predict(trees_3,newdata=state) 
+  
+  n<-nrow(state)
+  generated_predictions<-rnorm(n=n,mean=preds, sd=sd(residuals(trees_3))) #slumpar nf med mean av värdena
+  #och samma varians som residualerna har. Alltså genererar slumpmässiga observation utifrån mina
+  #predictioner.
+  return(generated_predictions)
+}
+set.seed(12345)
+bootstrap_PI<-boot(data=state, statistic=funk_PI_tree, sim="parametric", R=1000, mle=tree_3leaves,
+                ran.gen=random_gen) 
+
+interval_PI<-envelope(bootstrap_PI, level=.95)
+
+plot(state$MET,state$EX, ylim=c(min(interval_PI$point[2,]), 450)) #originaldata
+points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet, alltså fitten
+points(state$MET, interval_CI$point[1,], col="blue", type="l") #CI upper
+points(state$MET, interval_CI$point[2,], col="blue", type="l") #CI lower
+points(state$MET, interval_PI$point[1,], col="green", type="l") #PI upper
+points(state$MET, interval_PI$point[2,], col="green", type="l") #PI lower
+
+
 #Assignment 2-----------------------------------------------------------
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 PC<-prcomp(nir[, 1:126], scale=T)
