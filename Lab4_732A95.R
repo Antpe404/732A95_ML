@@ -9,6 +9,26 @@ plot(state$MET, state$EX, xlab="MET", ylab="EX")
 #What model can be appropriate?
 #-Appropriate for what? But prolly like a spline maybe? Maybe linear piecewise with one knot.
 
+#1.2
+library(tree)
+
+regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
+
+plot(regtree)
+cv_regtree<-cv.tree(regtree)
+
+plot(cv_regtree)
+#Verkar som att tree leaves minimerar va?
+
+tree_3leaves<-prune.tree(regtree, best=3)
+
+plot(tree_3leaves)
+text(tree_3leaves, pretty=0)
+
+
+
+
+
 #Assignment 2
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 PC<-prcomp(nir[, 1:126], scale=T)
@@ -172,26 +192,4 @@ DDcov<-cov(DDZ)#kovarianserna av de standardiserade pendelvariablerna
 sum(diag(DDcov))
 Egen<-eigen(DDcov)$values
 EV<-eigen(DDcov)$vector[,1]#Tar ut f?rsta kol ur matrisen med egenvektorer.
-
-#Rasmus
-library(reshape2)
-library(ggplot2)
-set.seed(12345)
-pcrfit <- pcr(Viscosity ~ ., data=nir, scale=TRUE)
-cvpcrfit <- crossval(pcrfit, segments=10, segment.type="random")
-## ---- end-of-assign2-4
-
-## ---- assign2-4-MSEP
-cv_scores <- t(matrix(MSEP(cvpcrfit)$val, nrow=2))
-plot_data <- data.frame(cbind(1:ncol(nir), cv_scores))
-colnames(plot_data) <- c("Components", "CV", "adjCV")
-plot_data <- melt(plot_data, id="Components", variable_name="Measure")
-names(plot_data)[ncol(plot_data)] <- "MSEP"
-xlimits <- seq(0, ncol(nir), by=5)
-ylimits <- seq(0, max(plot_data$MSEP) + 0.05, by=0.05)
-
-ggplot(plot_data) +
-  geom_line(aes(x=Components, y=MSEP, color=variable), size=1) +
-  scale_x_discrete(limits=xlimits) +
-  scale_y_continuous(breaks=ylimits, labels=ylimits, limits=c(0, max(plot_data$MSEP)))
 
