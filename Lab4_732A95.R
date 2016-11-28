@@ -100,7 +100,8 @@ points(state$MET, CI$point[2,], col="green", type="l")
 #beginning of the series.
 
 #The result from assignment 1.2, which is the red line in th eplot above, doesn't seem very reliable.
-#The confidant band is broad, and even so the band doesn't cover close to 95 % of the observations. 
+#The confidant band is broad, and the confident band is supposed to show where the true value of EX 
+#appeards according to MET. It's not supposed to cover 95 % of the observations.
 #Assignment 2-----------------------------------------------------------
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 PC<-prcomp(nir[, 1:126], scale=T)
