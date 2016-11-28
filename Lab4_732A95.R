@@ -25,9 +25,18 @@ tree_3leaves<-prune.tree(regtree, best=3)
 plot(tree_3leaves)
 text(tree_3leaves, pretty=0)
 
+#Inte säker på vad han vill att jag ska plotta här
 
+plot(state$MET, state$EX) #Originaldata
+hist(predict(tree_3leaves)) #Histo predicted
+plot(state$MET,predict(tree_3leaves)) #scatter predricted
+#the qouality of the fit obviously doesn't look super, but at least I can se the pattern with high
+#values to the left, lower in the moddle and medium to the right.
 
-
+hist(residuals(tree_3leaves)) #Hist resid
+#They dont look like NF. Have a few really big positive residuals, but most are negative.
+#If I compare the scatterplots above, i can see where they are coming from. The one at met ~22, and
+#two obs at Met ~50-52 are at about EX0350, but gets classified at ~260. Obvisouly not great.
 
 #Assignment 2
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
