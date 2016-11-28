@@ -34,8 +34,10 @@ plot(state$MET,predict(tree_3leaves)) #scatter predricted
 #values to the left, lower in the moddle and medium to the right. It's a underfit model however, its' 
 #confident bands wouldn't look good.
 
+library(ggplot2)
+ggplot(data=data.frame(resid=residuals(tree_3leaves)))+geom_histogram(aes(x=resid), bins=10)
 hist(residuals(tree_3leaves)) #Hist resid
-#They dont look like NF. Have a few really big positive residuals, but most are negative.
+#They dont really look like NF, but only 48 obs. Have a few really big positive residuals, but most are negative.
 #If I compare the scatterplots above, i can see where they are coming from. The one at met ~22, and
 #two obs at Met ~50-52 are at about EX0350, but gets classified at ~260. Obvisouly not great.
 
