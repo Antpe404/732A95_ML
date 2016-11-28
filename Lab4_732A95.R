@@ -30,20 +30,82 @@ text(tree_3leaves, pretty=0)
 plot(state$MET, state$EX) #Originaldata
 hist(predict(tree_3leaves)) #Histo predicted
 plot(state$MET,predict(tree_3leaves)) #scatter predricted
-#the qouality of the fit obviously doesn't look super, but at least I can se the pattern with high
-#values to the left, lower in the moddle and medium to the right.
+#the quality of the fit obviously doesn't look super, but at least I can se the pattern with high
+#values to the left, lower in the moddle and medium to the right. It's a underfit model however, its' 
+#confident bands wouldn't look good.
 
 hist(residuals(tree_3leaves)) #Hist resid
 #They dont look like NF. Have a few really big positive residuals, but most are negative.
 #If I compare the scatterplots above, i can see where they are coming from. The one at met ~22, and
 #two obs at Met ~50-52 are at about EX0350, but gets classified at ~260. Obvisouly not great.
 
-#Assignment 2
+#1.3
+library(boot)
+regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
+
+boot(data=state, statistic=state, sim="ordinary", R=1000)
+
+#Olegs modifierade
+
+#Ickeprunat.
+func_tree<-function(data, ind){
+  data1<-data[ind,]# extract bootstrap sample
+  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
+  #predict values for all Area values from the original data
+  priceP<-predict(regtrees,newdata=state)
+  return(priceP)
+}
+#res=boot(data2, f, R=1000) #make bootstrap
+set.seed(12345)
+bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
+bootstrap_res
+
+#Prunat till 3 löv
+func_tree<-function(data, ind){
+  data1<-data[ind,]# extract bootstrap sample
+  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
+ 
+  trees_3<-prune.tree(regtrees, best=3) #prunes tree tol 3 leaves
+  
+  priceP<-predict(trees_3,newdata=state) #predict values from the original data
+  return(priceP)
+}
+set.seed(12345)
+bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
+bootstrap_res
+
+#Prunat till 3 löv
+func_tree<-function(data, ind){
+  data1<-data[ind,]# extract bootstrap sample
+  trees_3<-prune.tree(tree(formula=EX~MET, data=data1, minsize=8, split="deviance"), best=3) 
+  #fit pruned tree model. I make the tree and prune it in the same code line.
+  priceP<-predict(trees_3,newdata=state) #predict values from the original data
+  return(priceP)
+}
+set.seed(12345)
+bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
+bootstrap_res
+
+CI<-envelope(bootstrap_res, level=.95)
+
+plot(state$MET,state$EX) #originaldata
+points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
+#CI$point[1,] Detta är upper och CI$point[2,] lower
+points(state$MET, CI$point[1,], col="green", type="l")
+points(state$MET, CI$point[2,], col="green", type="l")
+
+#The band is quite bumpy. That is probably beacuse some big outliers doesn't appear in all models
+#created with bootstrap. For example, most of the trees seem to fit observations with MET [30,50]
+# in the same way, that's why it has a more narrow band there, while it's much broader in the 
+#beginning of the series.
+
+#The result from assignment 1.2, which is the red line in th eplot above, doesn't seem very reliable.
+#The confidant band is broad, and even so the band doesn't cover close to 95 % of the observations. 
+#Assignment 2-----------------------------------------------------------
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 PC<-prcomp(nir[, 1:126], scale=T)
 lambda<-(PC$sdev^2)
 sprintf("%2.4f",lambda/sum(lambda)*100)
-
 
 
 
