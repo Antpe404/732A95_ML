@@ -19,3 +19,172 @@ plot(state$MET, state$EX, xlab="MET", ylab="EX", main="MET versus EX")
 ```
 
 I do not find any total obvious modelation for the data shown above. A cubic spline might work out okey. I piecewise linear model with one knot would maybe be decent as well.
+
+\newpage
+
+##Assignment 1.2
+
+I set the options as in the instruction and ran the tree. Since the task was about to select the number of leaves by cross validation, I start off by showing the result of that procedure.
+
+```{r, echo=F, warning=FALSE}
+#1.2
+library(tree)
+
+regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
+
+#plot(regtree)
+set.seed(12345)
+cv_regtree<-cv.tree(regtree)
+
+plot(cv_regtree)
+
+```
+
+From the plot above I do conclude that three or four leaves seems to minimize the deviance. Since it's reasonable to also minimize the complexity, I therefore decide to select a tree with three leaves. The tree is shown below.
+
+```{r, echo=F, fig.height=3, fig.width=5}
+tree_3leaves<-prune.tree(regtree, best=3)
+
+plot(tree_3leaves)
+title("Regression tree selected by CV, EX~MET")
+text(tree_3leaves, pretty=0)
+
+```
+
+The tree above has three leaves, depending on the levels of \textit{MET} on the points 7.7 and 60.5. The original data and the fitted data are plotted below.
+
+```{r, echo=F, fig.height=4, fig.width=7}
+par(mfrow=c(1,2))
+plot(state$MET, state$EX, main="Original data", xlab="MET", ylab="EX") #Originaldata
+plot(state$MET,predict(tree_3leaves),xlab="MET", ylab="Fitted EX", main="The predicted values")
+
+```
+
+The quality of the fit obviously doesn't look super good, which is intuitive just by looking at the original data. But at least I can see the pattern in the prediction the with high
+values to the left in the plot, lower in the middle and medium to the right. It's a underfit model however, its' 
+confident bands wouldn't look good. The histogram of the residuals is presented below.
+
+```{r, echo=F}
+library(ggplot2)
+ggplot(data=data.frame(resid=residuals(tree_3leaves)))+geom_histogram(aes(x=resid), bins=10)
+
+
+```
+
+From the histogram above it's hard to tell whether the residuals are normally distributed or not. There are very few observations, which means that I can't expect to see a clear distribution anyhow. It could be a normal distribution, or maybe some gamma distribution.
+
+If I compare the scatterplots above, I can see where the big residuals are coming from. Not all observation with MET values between 8 and 60 has low EX values for example, and not all observations with low values of MET has high EX.
+
+\newpage
+
+##Assignment 1.3
+
+I used the lectures from this course and some code chunks from the slides to come up with a non parametric bootstrap method. The result, i.e. the plot with the fitted values and the confidence bands, is presented below.
+
+```{r, echo=F}
+library(boot)
+#regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
+
+#Prunat till 3 löv---------------------------------
+func_CI_tree<-function(data, ind){
+  data1<-data[ind,]# extract bootstrap sample
+  trees_3<-prune.tree(tree(formula=EX~MET, data=data1, minsize=8, split="deviance"), best=3) 
+  #fit pruned tree model. I make the tree and prune it in the same code line.
+  priceP<-predict(trees_3,newdata=state) #predict values from the original data
+  return(priceP)
+}
+set.seed(12345)
+bootstrap_CI_unpara<-boot(data=state, statistic=func_CI_tree, sim="ordinary", R=1000)
+#bootstrap_CI
+
+CI<-envelope(bootstrap_CI_unpara, level=.95)
+
+plot(state$MET,state$EX, xlab="MET", ylab="EX",
+     main="Confidence band for regression tree \n by non parametric bootstrapping") #originaldata
+points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
+points(state$MET, CI$point[1,], col="green", type="l") #CI$point[1,]->Upper
+points(state$MET, CI$point[2,], col="green", type="l") #CI$point[2,]->Lower
+
+```
+
+
+The band is quite bumpy. That is probably because some of the big outliers doesn't appear in all models
+created by bootstraping. Most of the trees seem to fit observations with MET [30,50]
+in the same way, that's why it has a more narrow band there, while it's much broader for example in the 
+beginning of the series where we've got one obvious outlier.
+
+The result from assignment 1.2, which is the red line in the plot above, doesn't seem very reliable.
+The confidant band is quite broad, and the confident band is supposed to show the true value of EX 
+given MET. It's not supposed to cover 95 % of the observations.
+
+\newpage
+
+##Assignment 1.4
+
+I did the parametric bootstrapping procedure to get both the confidence- and prediction band by using the code shells available in the slide for the course. The results for the parametric bootstrap are presented below.
+
+```{r, echo=F, warning=F, message=F}
+#1.4
+#Börjar med min random generator
+random_gen<-function(data, mle){
+  data1<-data.frame(EX=state$EX, MET=state$MET)
+  n=nrow(data1)
+  data1$EX<-rnorm(n=n, mean=predict(tree_3leaves, newdata=data1), sd=sd(residuals(tree_3leaves)))
+  return(data1)
+}
+
+#Min motsvarande f1 enligt slide 29
+funk_CI_tree<-function(state){
+  regtrees<-tree(formula=EX~MET, data=state, minsize=8, split="deviance") #fit tree model
+  trees_3<-prune.tree(regtrees, best=3)
+  preds<-predict(trees_3, newdata=state)
+  return(preds)
+}
+
+set.seed(12345)
+bootstrap_CI_para<-boot(data=state, statistic=funk_CI_tree,
+                   sim="parametric", R=1000, mle=tree_3leaves, ran.gen = random_gen) 
+
+interval_CI<-envelope(bootstrap_CI_para, level=.95)
+
+#Fortsätter nu med att göra PRED INTERVAL enligt slide 32.
+
+funk_PI_tree<-function(state){
+  regtrees<-tree(formula=EX~MET, data=state, minsize=8, split="deviance") #fit tree model
+  
+  trees_3<-prune.tree(regtrees, best=3) #prunes tree tol 3 leaves
+  preds<-predict(trees_3,newdata=state) 
+  
+  n<-nrow(state)
+  generated_predictions<-rnorm(n=n,mean=preds, sd=sd(residuals(trees_3))) #slumpar nf med mean av värdena
+  #och samma varians som residualerna har. Alltså genererar slumpmässiga observation utifrån mina
+  #predictioner.
+  return(generated_predictions)
+}
+set.seed(12345)
+bootstrap_PI<-boot(data=state, statistic=funk_PI_tree, sim="parametric", R=1000, mle=tree_3leaves,
+                ran.gen=random_gen) 
+
+interval_PI<-envelope(bootstrap_PI, level=.95)
+
+plot(state$MET,state$EX, xlab="MET", ylab="EX",
+     main="Confidence and prediction bands for regression tree \n by parametric bootstrapping",
+     ylim=c(min(interval_PI$point[2,]), 450))
+
+points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet, alltså fitten
+points(state$MET, interval_CI$point[1,], col="green", type="l") #CI upper
+points(state$MET, interval_CI$point[2,], col="green", type="l") #CI lower
+points(state$MET, interval_PI$point[1,], col="blue", type="l") #PI upper
+points(state$MET, interval_PI$point[2,], col="blue", type="l") #PI lower
+
+```
+
+In the plot above, the green lines represent the confidence band and the blue lines represents the prediction bands. The confidence bands is clearly more narrow here, when I've used parametric bootstraping. Regarding this plot, the regression tree in assignment 2 (still red line in the plot above) looks more reliable. It does look like two of the observations aren't covered by the prediction band. That's as close as I can come to 5 % of the data, since the dataset only consists of 48 observations. The predicition band is practically saying that a new observation with a given MET value will be within this span, why it's reasonable to find out that two observations are outside in this case. If all observations would be inside the prediction band by a wide margin, or ten observation would be outside, I couldn't say it's defintely wrong but it would be worrying.
+
+\newpage
+
+##Assignment 1.5
+
+Parametric bootstrapping has the advantage of working even for small samples, which I do have in this case.
+The non parametric bootstraping method doesn't require that I can tell which distribution I'm working with. When I did the parametric boorstrapping in assignment 1.4 I assumed $$Y ~ N(Mu_i, sigma^2) $$  but as I commented on the histogram in assignment 1.2, I'n not sure of that.
+The parametric bootstrap is shown to be more accurate if the assumed (or known of course) distribution is correct. In my case the parametric bootstrapping in 1.4 gives better results, which I suppose might indicate that I did the right thing to say that the residuals shown in the histogram in assignment 1.2 might come from a normal distribution. Overall I'd say that the parametric bootstraping, i.e. what's done in assignment 1.4, is more appropriate in this case.

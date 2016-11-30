@@ -15,6 +15,7 @@ library(tree)
 regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
 
 plot(regtree)
+set.seed(12345)
 cv_regtree<-cv.tree(regtree)
 
 plot(cv_regtree)
@@ -27,9 +28,9 @@ text(tree_3leaves, pretty=0)
 
 #Inte säker på vad han vill att jag ska plotta här
 
-plot(state$MET, state$EX) #Originaldata
+plot(state$MET, state$EX, main="Original data") #Originaldata
 #hist(predict(tree_3leaves)) #Histo predicted
-plot(state$MET,predict(tree_3leaves)) #scatter predricted
+plot(state$MET,predict(tree_3leaves), main="The predicted values") #scatter predricted
 #the quality of the fit obviously doesn't look super, but at least I can se the pattern with high
 #values to the left, lower in the moddle and medium to the right. It's a underfit model however, its' 
 #confident bands wouldn't look good.
@@ -45,38 +46,46 @@ hist(residuals(tree_3leaves)) #Hist resid
 library(boot)
 regtree<-tree(formula=EX~MET, data=state, minsize=8, split="deviance")
 
-boot(data=state, statistic=state, sim="ordinary", R=1000)
+#boot(data=state, statistic=state, sim="ordinary", R=1000)
 
 #Olegs modifierade
 
-#Ickeprunat.
-func_tree<-function(data, ind){
-  data1<-data[ind,]# extract bootstrap sample
-  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
-  #predict values for all Area values from the original data
-  priceP<-predict(regtrees,newdata=state)
-  return(priceP)
-}
+#Ickeprunat------------------------------------------------------------------
+#func_tree<-function(data, ind){
+#  data1<-data[ind,]# extract bootstrap sample
+#  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
+#  #predict values for all Area values from the original data
+#  priceP<-predict(regtrees,newdata=state)
+#  return(priceP)
+#}
 #res=boot(data2, f, R=1000) #make bootstrap
-set.seed(12345)
-bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
-bootstrap_res
+#set.seed(12345)
+#bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
+#bootstrap_res
 
 #Prunat till 3 löv
-func_tree<-function(data, ind){
-  data1<-data[ind,]# extract bootstrap sample
-  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
- 
-  trees_3<-prune.tree(regtrees, best=3) #prunes tree tol 3 leaves
-  
-  priceP<-predict(trees_3,newdata=state) #predict values from the original data
-  return(priceP)
-}
-set.seed(12345)
-bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
-bootstrap_res
+#func_tree<-function(data, ind){
+#  data1<-data[ind,]# extract bootstrap sample
+#  regtrees<-tree(formula=EX~MET, data=data1, minsize=8, split="deviance") #fit tree model
+# 
+#  trees_3<-prune.tree(regtrees, best=3) #prunes tree tol 3 leaves
+#  
+#  priceP<-predict(trees_3,newdata=state) #predict values from the original data
+#  return(priceP)
+#}
+#set.seed(12345)
+#bootstrap_res<-boot(data=state, statistic=func_tree, sim="ordinary", R=1000)
+#bootstrap_res
 
-#Prunat till 3 löv
+#CI<-envelope(bootstrap_res, level=.95)
+
+#plot(state$MET,state$EX) #originaldata
+#points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
+#CI$point[1,] Detta är upper och CI$point[2,] lower
+#points(state$MET, CI$point[1,], col="green", type="l")
+#points(state$MET, CI$point[2,], col="green", type="l")
+
+#Prunat till 3 löv---------------------------------
 func_CI_tree<-function(data, ind){
   data1<-data[ind,]# extract bootstrap sample
   trees_3<-prune.tree(tree(formula=EX~MET, data=data1, minsize=8, split="deviance"), best=3) 
@@ -90,7 +99,8 @@ bootstrap_CI
 
 CI<-envelope(bootstrap_CI, level=.95)
 
-plot(state$MET,state$EX) #originaldata
+plot(state$MET,state$EX, xlab="MET", ylab="EX",
+     main="Confidence band for regression tree \n by non parametric bootstrapping") #originaldata
 points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
 #CI$point[1,] Detta är upper och CI$point[2,] lower
 points(state$MET, CI$point[1,], col="green", type="l")
@@ -142,8 +152,8 @@ points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet
 #CI$point[1,] Detta är upper och CI$point[2,] lower
 #points(state$MET, interval$overall[1,], col="green", type="l") #Pred upper
 #points(state$MET, interval$overall[2,], col="green", type="l") #Pred lower
-points(state$MET, interval_CI$point[1,], col="blue", type="l") #CI upper
-points(state$MET, interval_CI$point[2,], col="blue", type="l") #CI lower
+points(state$MET, interval_CI$point[1,], col="green", type="l") #CI upper
+points(state$MET, interval_CI$point[2,], col="green", type="l") #CI lower
 
 #Fortsätter nu med att göra PRED INTERVAL enligt slide 32.
 
@@ -167,10 +177,10 @@ interval_PI<-envelope(bootstrap_PI, level=.95)
 
 plot(state$MET,state$EX, ylim=c(min(interval_PI$point[2,]), 450)) #originaldata
 points(state$MET,predict(tree_3leaves), col="red", type="l") #Trädet, alltså fitten
-points(state$MET, interval_CI$point[1,], col="blue", type="l") #CI upper
-points(state$MET, interval_CI$point[2,], col="blue", type="l") #CI lower
-points(state$MET, interval_PI$point[1,], col="green", type="l") #PI upper
-points(state$MET, interval_PI$point[2,], col="green", type="l") #PI lower
+points(state$MET, interval_CI$point[1,], col="green", type="l") #CI upper
+points(state$MET, interval_CI$point[2,], col="green", type="l") #CI lower
+points(state$MET, interval_PI$point[1,], col="blue", type="l") #PI upper
+points(state$MET, interval_PI$point[2,], col="blue", type="l") #PI lower
 
 
 #Assignment 2-----------------------------------------------------------
