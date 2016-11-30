@@ -1,0 +1,21 @@
+---
+title: "Lab 4 732A95 Introduction to machine learning"
+author: "Anton Persson antpe404"
+date: "30 november 2016"
+output: pdf_document
+---
+#Assignment 1 Uncertainity estimation
+
+##Assignment 1.1
+
+The requested plot of variable \textit{EX} versus \textit{MET} is shown below.
+
+```{r, echo=F}
+state<-read.csv2("data/State.csv", sep=";", header=T)
+
+state<-state[order(state$MET, decreasing=T), ] #Reordrar efter MET
+plot(state$MET, state$EX, xlab="MET", ylab="EX", main="MET versus EX")
+
+```
+
+I do not find any total obvious modelation for the data shown above. A cubic spline might work out okey. I piecewise linear model with one knot would maybe be decent as well.
