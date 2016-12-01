@@ -302,10 +302,9 @@ grid()
 ```
 
 The traceplots above for the fastICA model look very much the same as the traceplots for the two principal components.
-I think that $W'$ is the eigenvectors of the ICA-model, corresponding to the eigenvectors
+I think that $W'$ is the loadings of the ICA-model, representing the same thing as the eigenvectors
 in the U matrix in PCA.
 
-FORMELN OCH NEGENTROPY
 
 ##Assignment 2.3b
 
