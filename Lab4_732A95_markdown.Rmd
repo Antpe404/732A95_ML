@@ -326,7 +326,30 @@ plot(x=Z_ica$IC1, y=Z_ica$IC2, xlab=colnames(Z_ica)[1],
 
 The scores for  IC1 and IC2 looks much the same as for PC1 and PC2. Note that the difference is the reversed values in IC2 compared to PC2. That could also be seen when comparing the trace plots, and it doesn't matter in this case.
 
+\newpage
+
 ##Assignment 2.4
 
 The PCR model where I chose the number of PCs by cross validation was done using the built in pcr function in R.
 The required plot is provided below. 
+
+```{r, echo=F, warning=F, message=F}
+#2.4
+library(pls)
+
+#Detta är PCR enligt slides.
+set.seed(12345)
+pcr_model<-pcr(Viscosity ~ ., data=nir, scale=TRUE, validation="CV")
+#pcr_model
+#MSEP(pcr_model)#Detta är vad validationplotten plottar
+
+validationplot(pcr_model,val.type="MSEP", xaxt="n") #xaxt tar bort x-axeln
+axis(1, at = seq(0, 120, by = 10), las=1)
+abline(v=28, lty=3) 
+mtext("Red dotted line is adjusted CV")
+
+#plot(MSEP(pcr_model))
+
+```
+
+The MSEP gets minimized when I select 28 components. That is shown in the plot, and the exact values for all number of components can be extracted by the call MSEP() in R. 

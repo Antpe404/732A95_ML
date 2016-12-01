@@ -295,6 +295,22 @@ pcr_model<-pcr(Viscosity ~ ., data=nir, scale=TRUE, validation="CV")
 pcr_model
 MSEP(pcr_model)#Detta är vad validationplotten plottar
 
+validationplot(pcr_model,val.type="MSEP", xaxt="n") #xaxt tar bort x-axeln
+axis(1, at = seq(0, 120, by = 10), las=1)
+abline(v=28, lty=3) 
+#Detta lyckas jag ej få fram.
+#Inte säker på vad detta är, men ngnstans mellan 20/40?
+#28 om man är exakt, kan man se om man tittar i MSEP(pcr_model)
+plot(MSEP(pcr_model))
+
+min(as.numeric(unlist((MSEP(pcr_model)))[1:254]))
+
+as.matrix(unlist(MSEP(pcr_model)), ncol=3)
+as.matrix(unlist(MSEP(pcr_model))[1:254])
+as.matrix(unlist((MSEP(pcr_model)))[1:254])
+dim(as.matrix(unlist((MSEP(pcr_model)))[1:254]))
+
+#-------------------------------------skit nedan, först fr annat försök att lösa 2.4-------------------
 #----------------------
 #Försök att ta fram värdena i MSEP(pcr_model). Går dåligt. Listor.
 #Vill ha fram min.
@@ -326,18 +342,8 @@ pcr_model$scores
 egen_cv<-crossval(pcr_model)
 egen_cv
 summary(egen_cv)
-#---------------------
 
 
-validationplot(pcr_model,val.type="MSEP", xaxt="n") #xaxt tar bort x-axeln
-axis(1, at = seq(0, 120, by = 10), las=1)
-#abline(h=min()) Detta lyckas jag ej få fram.
-#Inte säker på vad detta är, men ngnstans mellan 20/40?
-#28 om man är exakt, kan man se om man tittar i MSEP(pcr_model)
-plot(MSEP(pcr_model))
-
-
-#-------------------------------------
 DDZ<-scale(y) 
 DDZall<-scale(x)#standardiserar x, dvs alla variabler.
 
