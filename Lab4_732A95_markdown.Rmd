@@ -188,7 +188,7 @@ In the plot above, the green lines represent the confidence band and the blue li
 ##Assignment 1.5
 
 Parametric bootstrapping has the advantage of working even for small samples, which I do have in this case.
-The non parametric bootstraping method doesn't require that I can tell which distribution I'm working with. When I did the parametric boorstrapping in assignment 1.4 I assumed $$Y ~ N(Mu_i, sigma^2) $$  but as I commented on the histogram in assignment 1.2, I'n not sure of that.
+The non parametric bootstraping method doesn't require that I can tell which distribution I'm working with. When I did the parametric boorstrapping in assignment 1.4 I assumed $Y \sim \mathcal{N}(\mu_{i}, \sigma^2)$  but as I commented on the histogram in assignment 1.2, I'n not sure of that.
 The parametric bootstrap is shown to be more accurate if the assumed (or known of course) distribution is correct. In my case the parametric bootstrapping in 1.4 gives better results, which I suppose might indicate that I did the right thing to say that the residuals shown in the histogram in assignment 1.2 might come from a normal distribution. Overall I'd say that the parametric bootstraping, i.e. what's done in assignment 1.4, is more appropriate in this case.
 
 \newpage
@@ -302,7 +302,7 @@ grid()
 ```
 
 The traceplots above for the fastICA model look very much the same as the traceplots for the two principal components.
-I think that $$W'$$ is the eigenvectors of the ICA-model, corresponding to the eigenvectors
+I think that $W'$ is the eigenvectors of the ICA-model, corresponding to the eigenvectors
 in the U matrix in PCA.
 
 FORMELN OCH NEGENTROPY
