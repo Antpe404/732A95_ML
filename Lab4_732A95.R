@@ -298,17 +298,13 @@ MSEP(pcr_model)#Detta är vad validationplotten plottar
 validationplot(pcr_model,val.type="MSEP", xaxt="n") #xaxt tar bort x-axeln
 axis(1, at = seq(0, 120, by = 10), las=1)
 abline(v=28, lty=3) 
-#Detta lyckas jag ej få fram.
+#Detta lyckas jag ej få fram på ett logiskt sätt, men kan se i MSEP(pcr_model) att 28 components är lägst.
 #Inte säker på vad detta är, men ngnstans mellan 20/40?
 #28 om man är exakt, kan man se om man tittar i MSEP(pcr_model)
 plot(MSEP(pcr_model))
 
 min(as.numeric(unlist((MSEP(pcr_model)))[1:254]))
 
-as.matrix(unlist(MSEP(pcr_model)), ncol=3)
-as.matrix(unlist(MSEP(pcr_model))[1:254])
-as.matrix(unlist((MSEP(pcr_model)))[1:254])
-dim(as.matrix(unlist((MSEP(pcr_model)))[1:254]))
 
 #-------------------------------------skit nedan, först fr annat försök att lösa 2.4-------------------
 #----------------------
