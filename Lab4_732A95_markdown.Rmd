@@ -247,11 +247,13 @@ plot(x=Z$PC1, y=Z$PC2, xlab=colnames(Z)[1], ylab=colnames(Z)[2],  main="The scor
 The plot of the scores for PC1 and PC2 shows that there are a few observations of unusual diesel fuels. There are two major outliers accorinding to PC1 especially. Those two seems to be more normal according to PC2, even though the observatin on the left bottom of the plot can be seen as an outlier in both PCs.
 Yes, it seems to a few unusual fuels, escpecially on the PC1.
 
+\newpage
+
 ## Assignment 2.2
 
 The trace plots for the two selected PCs are shown below.
 
-```{r, echo=F, fig.height=4, fig.widht=7}
+```{r, echo=F, fig.height=5, fig.widht=7}
 ##############2.2
 par(mfrow=c(1,2))
 plot(U[,1], main="Traceplot PC1, it's eigenvector", ylab="value")
@@ -260,3 +262,71 @@ plot(U[,2], main="Traceplot PC2, it's eigenvector", ylab="value")
 grid()
 ```
 
+From the left plot above, the loadings for PC1, I conclude that all original variables contribute to PC1. That can be seen since all 126 variable indexes on the X axis has a value separated from zero. For PC2 on the other side, not all original variables contributes to explain PC2. PC2 seems to be explained mainly by the first 25 and the last 20 original variables, i.e. those who are separated from 0 in the plot.
+
+\newpage
+
+##Assignment 2.3a
+
+I ran the fastICA procedure and did the calculations as instructed, and the resulting traceplots is presented below. To campare them to the PCA-traceplots I decided to plot all four plots next to each other.
+
+```{r, echo=F, warning=F, message=F, fig.height=5, fig.widht=7}
+#############2.3
+#install.packages("fastICA")
+library(fastICA)
+#fastICA(X, 2, alg.typ = "parallel", fun = "logcosh", alpha = 1,
+ #       method = "R", row.norm = FALSE, maxit = 200, tol = 0.0001, verbose = TRUE) 
+set.seed(12345)
+ica_model<-fastICA(nir2, n.comp=number_of_components,alg.typ="parallel",
+                   fun="logcosh", alpha=1, row.norm=F,verbose=T )
+
+#2.3a
+#ica_model$K
+#ica_model$W
+
+W_prim<-ica_model$K%*%ica_model$W #126x2/2x2->126x2
+#W_prim
+
+#Plotta w_prim
+#plot(W_prim[,1], main="Traceplot ICA1", ylab="value")
+#grid()
+#plot(W_prim[,2], main="Traceplot ICA2", ylab="value")
+#grid()
+
+par(mfrow=c(1,2))
+#plot(U[,1], main="Traceplot PC1, it's eigenvector", ylab="value")
+#grid()
+#plot(U[,2], main="Traceplot PC2, it's eigenvector", ylab="value")
+#grid()
+plot(W_prim[,1], main="Traceplot IC1, it's eigenvector", ylab="value")
+grid()
+plot(W_prim[,2], main="Traceplot IC2, it's eigenvector", ylab="value")
+grid()
+
+```
+
+The traceplots above for the fastICA model look very much the same as the traceplots for the two principal components.
+I think that $$W'$$ is the eigenvectors of the ICA-model, corresponding to the eigenvectors
+in the U matrix in PCA.
+
+FORMELN OCH NEGENTROPY
+
+The scores for the first two latent features from the fastICA model, i.e. IC1 and IC2, are shown below.
+
+```{r, echo=F}
+Z_ica<-as.data.frame(X %*% W_prim) #395x126 126x2
+colnames(Z_ica)<-c("IC1", "IC2")
+
+#Nedan är scoresen för ICA
+par(mfrow=c(1,1))
+plot(x=Z_ica$IC1, y=Z_ica$IC2, xlab=colnames(Z_ica)[1], 
+     ylab=colnames(Z_ica)[2], main="The scores for the two latent features, ICA")
+
+```
+
+The scores for  IC1 and IC2 looks much the same as for PC1 and PC2. Note that the difference is the reversed values in IC2 compared to PC2. That could also be seen when comparing the trace plots, and it doesn't matter in this case.
+
+##Assignment 2.4
+
+The PCR model where I chose the number of PCs by cross validation was done using the built in pcr function in R.
+The required plot is provided below. 

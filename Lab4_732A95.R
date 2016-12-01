@@ -250,9 +250,9 @@ W_prim<-ica_model$K%*%ica_model$W #126x2/2x2->126x2
 W_prim
 
 #Plotta w_prim
-plot(W_prim[,1], main="Traceplot ICA1, it's eigenvector", ylab="value")
+plot(W_prim[,1], main="Traceplot ICA1", ylab="value")
 grid()
-plot(W_prim[,2], main="Traceplot ICA2, it's eigenvector", ylab="value")
+plot(W_prim[,2], main="Traceplot ICA2", ylab="value")
 grid()
 
 par(mfrow=c(2,2))
