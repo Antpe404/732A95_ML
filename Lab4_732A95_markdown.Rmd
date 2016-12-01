@@ -188,3 +188,75 @@ In the plot above, the green lines represent the confidence band and the blue li
 Parametric bootstrapping has the advantage of working even for small samples, which I do have in this case.
 The non parametric bootstraping method doesn't require that I can tell which distribution I'm working with. When I did the parametric boorstrapping in assignment 1.4 I assumed $$Y ~ N(Mu_i, sigma^2) $$  but as I commented on the histogram in assignment 1.2, I'n not sure of that.
 The parametric bootstrap is shown to be more accurate if the assumed (or known of course) distribution is correct. In my case the parametric bootstrapping in 1.4 gives better results, which I suppose might indicate that I did the right thing to say that the residuals shown in the histogram in assignment 1.2 might come from a normal distribution. Overall I'd say that the parametric bootstraping, i.e. what's done in assignment 1.4, is more appropriate in this case.
+
+\newpage
+
+#Assignment 2 Principal components
+
+##Assignment 2.1
+
+I didn't use the prcomp() function but did the calcualtions myself. The plot explaining how much of the variation the first ten principal components explains is shown below.
+
+```{r, echo=F}
+nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
+#PC<-prcomp(nir[, 1:126], scale=T)
+#lambda<-(PC$sdev^2)
+#sprintf("%2.4f",lambda/sum(lambda)*100)
+
+#############Ass 2.1, egen PCA
+nir2<-as.data.frame(scale(nir[, 1:126])) #Tar bort y-variablen här
+Y<-as.data.frame(scale(nir[, 127])) #Lägger Y här.
+covar<-cov(nir2)#Cov av X-variablerna
+eigen_stuff<-eigen(covar)
+eigenvalues<-(eigen_stuff$values)
+eigen_vectors<-eigen_stuff$vectors #första kol innebär förta egenvektorn
+PC_proportion<-eigenvalues/sum(eigenvalues) #Detta är hur mkt de olika PC förklarar.
+#sprintf("%2.4f", PC_proportion) #Här skriver jag ut dem. Första förklarar 95.38 %.
+
+i<-1
+PCAs<-integer(0)
+while(sum(PCAs)<.99){
+  PCAs[i]<-PC_proportion[i]
+  i<-i+1
+}
+number_of_components<-length(PCAs)
+
+#PLOTTEN
+barplot(PC_proportion[1:10], ylim=c(0,1), ylab="Share of the variance explained", 
+ xlab="First 10 PC components", las=1)
+grid()
+title("Variation explained by the first 10 components")
+
+```
+
+The plot above tells me that the first component explains very much, about 95 %. The plot tells me that one or two PC:s should be extracted, depending on how much variance I need to explain. The instructions tell me to explain at least 99 %, which means that I choose `r number_of_components` components. That is, the first two bars in the plot above explains at least 99 %.
+The requested plot of the scores for the two PC:s is shown below.
+
+```{r, echo=F}
+#Z = X U slide 14
+X<-as.matrix(nir2)
+U<-eigen_vectors[,1:number_of_components]
+Z<-as.data.frame(X %*% U)
+colnames(Z)<-c("PC1", "PC2")
+
+#Nedan är scoresen för PC1.
+plot(x=Z$PC1, y=Z$PC2, xlab=colnames(Z)[1], ylab=colnames(Z)[2],  main="The scores for PC1 and PC2, PCA" )
+
+```
+
+The plot of the scores for PC1 and PC2 shows that there are a few observations of unusual diesel fuels. There are two major outliers accorinding to PC1 especially. Those two seems to be more normal according to PC2, even though the observatin on the left bottom of the plot can be seen as an outlier in both PCs.
+Yes, it seems to a few unusual fuels, escpecially on the PC1.
+
+## Assignment 2.2
+
+The trace plots for the two selected PCs are shown below.
+
+```{r, echo=F, fig.height=4, fig.widht=7}
+##############2.2
+par(mfrow=c(1,2))
+plot(U[,1], main="Traceplot PC1, it's eigenvector", ylab="value")
+grid()
+plot(U[,2], main="Traceplot PC2, it's eigenvector", ylab="value")
+grid()
+```
+
