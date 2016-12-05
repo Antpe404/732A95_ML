@@ -144,19 +144,19 @@ training_errors<-integer()
 test_errors<-integer()
 index<-1
 for (i in sekvens){
-  modellen<-blackboost(Spam~., data=spam_tr, family=AdaExp(),  control=boost_control(mstop=i))
+  modellen_ct<-blackboost(Spam~., data=spam_tr, family=AdaExp(),  control=boost_control(mstop=i))
   
-  tejbell_train<-table(predict(modellen, newdata= spam_tr, type="class"), spam_tr$Spam)
+  tejbell_train<-table(pred=predict(modellen_ct, newdata= spam_tr, type="class"), truth=spam_tr$Spam)
   training_errors[index]<-1-sum(diag(tejbell_train))/sum(tejbell_train)
   
-  tejbell_test<-table(predict(modellen, newdata= spam_te, type="class"), spam_te$Spam)
+  tejbell_test<-table(pred=predict(modellen_ct, newdata= spam_te, type="class"), truth=spam_te$Spam)
   test_errors[index]<-1-sum(diag(tejbell_test))/sum(tejbell_test)
   index<-index+1
 }
 
-plotredo<-data.frame(cbind(sekvens,training_errors, test_errors))
+plotredo_ct<-data.frame(cbind(sekvens,training_errors, test_errors))
 
-ggplot(data=plotredo)+geom_point(aes(x=sekvens, y=training_errors, col="error train"))+
+ggplot(data=plotredo_ct)+geom_point(aes(x=sekvens, y=training_errors, col="error train"))+
   geom_line(aes(x=sekvens, y=training_errors, col="error train"))+
   geom_point(aes(x=sekvens, y=test_errors, col="error test"))+
   geom_line(aes(x=sekvens, y=test_errors, col="error test"))+xlab("Number of trees")+
@@ -165,6 +165,57 @@ ggplot(data=plotredo)+geom_point(aes(x=sekvens, y=training_errors, col="error tr
 
 
 #----------------------------------Adaboost classification tree-------------------------------------------
+#Kladd
+randomForest()
+set.seed(1234567890)
+modellen_rf<-randomForest(Spam ~ ., data=spam_tr, ntree=100, norm.votes=T)
+
+modellen_rf
+modellen_rf$err.rate
+modellen_rf$predicted
+modellen_rf$terms
+predict(modellen_rf)
+
+all(predict(modellen_rf)==modellen_rf$predicted)
+modellen_rf$confusion
+
+tr_tab<-table(predict(modellen_rf, newdata= spam_tr, type="class"), spam_tr$Spam)
+err_tr<-1-sum(diag(tr_tab))/sum(tr_tab)
+test_tab<-table(predict(modellen_rf, newdata= spam_te, type="class"), spam_te$Spam)
+err_test<-1-sum(diag(test_tab))/sum(test_tab)
+
+predict(modellen_rf, newdata=spam_tr, type="class")
+predict(modellen_rf, newdata=spam_tr, type="class")==predict(modellen_rf)
+
+
+#----------------------------------Adaboost classification tree-------------------------------------------
+sekvens<-seq(10,100, 10)
+training_errors_rf<-integer()
+test_errors_rf<-integer()
+index<-1
+for (i in sekvens){
+  modellen_rf<-randomForest(Spam ~ ., data=spam_tr, ntree=i, norm.votes=FALSE)
+  
+  tr_tab<-table(predict(modellen_rf, newdata= spam_tr, type="class"), spam_tr$Spam)
+  training_errors_rf[index]<-1-sum(diag(tr_tab))/sum(tr_tab)
+  
+  test_tab<-table(predict(modellen_rf, newdata= spam_te, type="class"), spam_te$Spam)
+  test_errors_rf[index]<-1-sum(diag(test_tab))/sum(test_tab)
+  index<-index+1
+}
+
+training_errors_rf
+test_errors_rf
+
+plotredo_rf<-data.frame(cbind(sekvens,training_errors_rf, test_errors_rf))
+
+ggplot(data=plotredo_rf)+geom_point(aes(x=sekvens, y=training_errors_rf, col="error train"))+
+  geom_line(aes(x=sekvens, y=training_errors_rf, col="error train"))+
+  geom_point(aes(x=sekvens, y=test_errors_rf, col="error test"))+
+  geom_line(aes(x=sekvens, y=test_errors_rf, col="error test"))+xlab("Number of trees")+
+  ylab("Error rate")+ggtitle("Evaluation of Adaboost, random tree")
+
+
 
 
 
