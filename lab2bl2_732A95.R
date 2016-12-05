@@ -48,8 +48,7 @@ upperbound<-mean((felen_upper/length(felen_upper)))
 #blir alltså 3 modeller för varje bagging, om jag tänker rätt. Först en modell på fold (1,2), sen (1,3), sen (2,3)
 #börjar med att sampla 
 #set.seed(1234567890)
-#bodyfat2<-bodyfat[sample(1:nrow(bodyfat), replace=T),] 
-#replace är true eftersom vi ska bagga. Datamaterialet ovan bör alltså innehålla dubletter.
+
 
 set.seed(1234567890)
 bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
@@ -87,42 +86,42 @@ set.seed(1234567890)
 upperbound_2<-mean(alla_fel)
 #The upper bound är mean av alla individuella fel. Rimligt att detta bound är ngt högre, eftersom vi kör 3fold CV?
 #----
-set.seed(1234567890)
-bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
-bodyfat_tr<-bodyfat_samplad[1:73,] #Träningsset
-bodyfat_te<-bodyfat_samplad[74:110,] #testset
+#set.seed(1234567890)
+#bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
+#bodyfat_tr<-bodyfat_samplad[1:73,] #Träningsset
+#bodyfat_te<-bodyfat_samplad[74:110,] #testset
 
-bf_tr_sam<-bodyfat_tr[sample(1:nrow(bodyfat_tr), replace=T), ]
-
-
-folds_data<-suppressWarnings(split(bodyfat_samplad, 1:3))
-fold1<-data.frame(folds_data$`1`)
-fold2<-data.frame(folds_data$`2`)
-fold3<-data.frame(folds_data$`3`)
-
-set1<-rbind(fold1, fold2)
-test1<-fold3
-
-set2<-rbind(fold1, fold3)
-test2<-fold2
-
-set3<-rbind(fold2, fold3)
-test3<-fold1
-
-tree1<-tree(formula=Bodyfat_percent~., data=set1, split="deviance")
-fits1<-predict(tree1, newdata=test1)
-tree2<-tree(formula=Bodyfat_percent~., data=set2, split="deviance")
-fits2<-predict(tree2, newdata=test2)
-tree3<-tree(formula=Bodyfat_percent~., data=set3, split="deviance")
-fits3<-predict(tree3, newdata=test3)
+#bf_tr_sam<-bodyfat_tr[sample(1:nrow(bodyfat_tr), replace=T), ]
 
 
-folds<-3
-komber<-combn(1:folds, folds-1)
-komber
-komber[,1]
+#folds_data<-suppressWarnings(split(bodyfat_samplad, 1:3))
+#fold1<-data.frame(folds_data$`1`)
+#fold2<-data.frame(folds_data$`2`)
+#fold3<-data.frame(folds_data$`3`)
 
-assign(paste("perf.a", "1", sep=""),5)
+#set1<-rbind(fold1, fold2)
+#test1<-fold3
+
+#set2<-rbind(fold1, fold3)
+#test2<-fold2
+
+#set3<-rbind(fold2, fold3)
+#test3<-fold1
+
+#tree1<-tree(formula=Bodyfat_percent~., data=set1, split="deviance")
+#fits1<-predict(tree1, newdata=test1)
+#tree2<-tree(formula=Bodyfat_percent~., data=set2, split="deviance")
+#fits2<-predict(tree2, newdata=test2)
+#tree3<-tree(formula=Bodyfat_percent~., data=set3, split="deviance")
+#fits3<-predict(tree3, newdata=test3)
+
+
+#folds<-3
+#komber<-combn(1:folds, folds-1)
+#komber
+#komber[,1]
+
+#assign(paste("perf.a", "1", sep=""),5)
 
 #for(i in 1:folds){
 #assign(paste("set", "i", sep=""),rbind(fold[HÄR vill jag ha i komber[,1]],fold2))
