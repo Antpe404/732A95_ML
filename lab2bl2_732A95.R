@@ -42,8 +42,8 @@ for ( i in 1:100){
   felen_upper[i]<-mean((fitsen-bodyfat_te$Bodyfat_percent)**2)
 }
 #Plockar nu ut mean av alla de individuella felen nedan.
-upperbound<-mean((felen_upper/length(felen_upper)))
-#upperbound<-mean(felen_upper)
+#upperbound<-mean((felen_upper/length(felen_upper)))
+upperbound<-mean(felen_upper)
 
 #2.2----------------------------------------------------------------------------------
 #blir alltsa 3 modeller for varje bagging, om jag tanker ratt. Forst en modell pa fold (1,2), sen (1,3), sen (2,3)
@@ -89,8 +89,18 @@ upperbound_2<-mean(alla_fel)
 
 #2.3
 
+#Ska nog bara leverera 100 trees baserat på hela data, dvs fortf bagga men inte på bara 2/3 av data.
+trees_fulldataset<-list() #Tom lista to place the trees in.
+set.seed(1234567890)
 
+for ( i in 1:100){
+  saf<-sample(1:nrow(bodyfat), replace=T)
+  bodyfat_bag<-bodyfat[saf,]
+  fat_tree<-tree(formula=Bodyfat_percent~., data=bodyfat_bag, split="deviance")
+  trees_fulldataset[i]<-fat_tree
+}
 
+#So, if im getting this right, the hundred trees in the list below is what i'd return the customer.
 
 #######Assignment 4
 spam<-read.csv2("data/spambaselab2b2.csv", sep=";", header=T)
