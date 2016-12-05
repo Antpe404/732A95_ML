@@ -106,8 +106,6 @@ library(mboost)
 library(randomForest)
 library(ggplot2)
 
-
-
 #Förklaringar till inställningarna:
 #AdaExp() uses the exponential loss, which essentially 
 #leads to the AdaBoost algorithm of Freund and Schapire (1996).
@@ -156,23 +154,19 @@ for (i in sekvens){
   index<-index+1
 }
 
+plotredo<-data.frame(cbind(sekvens,training_errors, test_errors))
+
+ggplot(data=plotredo)+geom_point(aes(x=sekvens, y=training_errors, col="error train"))+
+  geom_line(aes(x=sekvens, y=training_errors, col="error train"))+
+  geom_point(aes(x=sekvens, y=test_errors, col="error test"))+
+  geom_line(aes(x=sekvens, y=test_errors, col="error test"))+xlab("Number of trees")+
+  ylab("Error rate")+ggtitle("Evaluation of Adaboost, classication tree")
 
 
 
+#----------------------------------Adaboost classification tree-------------------------------------------
 
 
-for(i in sekvens){
-  assign(paste("error_rate_", i, sep=""), 
-        i+10
-        #Har vill jag ju ha in sjalva funktionen istallet, alltsa det nedan
-        #modellen<-blackboost(Spam~., data=spam_tr, family=AdaExp(),  control=boost_control(mstop=i))
-        #tejbell_test<-table(predict(modellen, newdata= spam_te, type="class"), spam_te$Spam)
-        
-        #1-sum(diag(tejbell_test))/sum(tejbell_test)
-        
-         )
-}
-assign(paste("error_rate", i, sep=""),5)
 
 
 
@@ -194,4 +188,16 @@ assign(paste("error_rate", i, sep=""),5)
 #assign(paste("set", "i", sep=""),rbind(fold[HaR vill jag ha i komber[,1]],fold2))
 #}
 
-#afsaff
+#
+#for(i in sekvens){
+ # assign(paste("error_rate_", i, sep=""), 
+#         i+10
+         #Har vill jag ju ha in sjalva funktionen istallet, alltsa det nedan
+         #modellen<-blackboost(Spam~., data=spam_tr, family=AdaExp(),  control=boost_control(mstop=i))
+         #tejbell_test<-table(predict(modellen, newdata= spam_te, type="class"), spam_te$Spam)
+         
+         #1-sum(diag(tejbell_test))/sum(tejbell_test)
+         
+ # )
+#}
+#assign(paste("error_rate", i, sep=""),5)
