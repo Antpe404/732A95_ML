@@ -44,14 +44,49 @@ for ( i in 1:100){
 #Plockar nu ut mean av alla de individuella felen nedan.
 upperbound<-mean((felen_upper/length(felen_upper)))
 
-#2.2
+#2.2----------------------------------------------------------------------------------
 #blir alltså 3 modeller för varje bagging, om jag tänker rätt. Först en modell på fold (1,2), sen (1,3), sen (2,3)
 #börjar med att sampla 
 #set.seed(1234567890)
 #bodyfat2<-bodyfat[sample(1:nrow(bodyfat), replace=T),] 
 #replace är true eftersom vi ska bagga. Datamaterialet ovan bör alltså innehålla dubletter.
 
+set.seed(1234567890)
+bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
 
+folds<-3
+baggingar<-100
+folds_data<-suppressWarnings(split(bodyfat_samplad, 1:folds))
+#fold1<-data.frame(folds_data$`1`)
+#fold2<-data.frame(folds_data$`2`)
+#fold3<-data.frame(folds_data$`3`)
+alla_fel<-matrix(0, nrow=folds, ncol=baggingar)
+
+for (i in 1:folds){
+  training<-folds_data[-i]
+  del1_train<-data.frame(training[1])
+  colnames(del1_train)<-colnames(bodyfat_samplad)
+  del2_train<-data.frame(training[2])
+  colnames(del2_train)<-colnames(bodyfat_samplad)
+  training<-rbind(del1_train, del2_train)
+  testing<-data.frame(folds_data[i])
+  colnames(testing)<-colnames(bodyfat_samplad)
+  
+  for (j in 1:baggingar){
+   
+#felen<-matrix(0, nrow=folds, ncol=baggingar)
+set.seed(1234567890)
+  urval<-sample(1:nrow(training), replace=T)
+  bodyfat_bag<-training[urval,]
+  fat_tree<-tree(formula=Bodyfat_percent~., data=bodyfat_bag, split="deviance")
+  fitsen<-predict(fat_tree, newdata=testing)
+  alla_fel[i, j]<-mean((fitsen-testing$Bodyfat_percent)**2)
+}
+}
+
+upperbound_2<-mean(alla_fel)
+#The upper bound är mean av alla individuella fel. Rimligt att detta bound är ngt högre, eftersom vi kör 3fold CV?
+#----
 set.seed(1234567890)
 bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
 bodyfat_tr<-bodyfat_samplad[1:73,] #Träningsset
@@ -60,7 +95,7 @@ bodyfat_te<-bodyfat_samplad[74:110,] #testset
 bf_tr_sam<-bodyfat_tr[sample(1:nrow(bodyfat_tr), replace=T), ]
 
 
-folds_data<-suppressWarnings(split(bodyfat2, 1:3))
+folds_data<-suppressWarnings(split(bodyfat_samplad, 1:3))
 fold1<-data.frame(folds_data$`1`)
 fold2<-data.frame(folds_data$`2`)
 fold3<-data.frame(folds_data$`3`)
