@@ -278,7 +278,7 @@ for(it in 1:max_it) {
   for (i in 1:K){
     for (j in 1:N){
       #slide 6
-      z[j, i]<-prod((mu[i,]**(x[j,])), ((1-mu[i,])^(1-x[j,]))) * pi[i]
+      z[j, i]<-prod((mu[i,]**(x[j,])), ((1-mu[i,])**(1-x[j,]))) * pi[i]
     }
   }
   # Your code here
