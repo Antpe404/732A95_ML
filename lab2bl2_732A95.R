@@ -274,9 +274,17 @@ for(it in 1:max_it) {
   #points(mu[4,], type="o", col="yellow")
   Sys.sleep(0.5)
   # E-step: Computation of the fractional component assignments
+  #Compute p(znk ∣x n,µ,π) for all n
+  for (i in 1:K){
+    for (j in 1:N){
+      #slide 6
+      z[j, i]<-prod((mu[i,]**(x[j,])), ((1-mu[i,])^(1-x[j,]))) * pi[i]
+    }
+  }
   # Your code here
   #Log likelihood computation.
   # Your code here
+  
   cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
   flush.console()
   # Stop if the lok likelihood has not changed significantly
