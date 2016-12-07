@@ -274,36 +274,71 @@ for(it in 1:max_it) {
   #points(mu[4,], type="o", col="yellow")
   Sys.sleep(0.5)
   # E-step: Computation of the fractional component assignments
+  #Your code here
   #Compute p(znk ∣x n,µ,π) for all n
+  #slide 9
   for (k in 1:K){
     for (n in 1:N){
       for (d in 1:D){
         #slide 6
-        #z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
-        z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
+        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
+        #z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
       }
     }
   }
-  
+  #Här är divisionen för p(znk ∣x n,µ,π) enl slide 9.
   z<-z/rowSums(z)
-  # Your code here
+  
+ 
   #Log likelihood computation.
   # Your code here
+  #sum_n LOG sum_k pi_k p(x_n | mu_k)
+  # i.e. prod_i p(x_ni | mu_ki)=prod_i (mu_ki)^x_ni (1-mu_ki)^(1-x_ni).
+sumloglik<-integer(0)
+
+  for (n in 1:N){
+    for (k in 1:K){
+      felen<-0
+      for (d in 1:D){
+    
+        felen<-felen+(x[n, d]*log(mu[k, d]))+((1-x[n, d])*log(1-mu[k, d]))
+        
+        }
+        llik[k]<-z[n, k]*(log(pi[k])+felen)
+      }
+    #sumloglik[n]<-sum(llik)
+  }
+
+llik[it]<-sum(sumloglik)
+  
   
   cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
   flush.console()
   # Stop if the lok likelihood has not changed significantly
   # Your code here
+while (it > 1){
+  if ((abs(llik[it]-llik[it-1]))<minchange){
+    stop("The likelihood doesn't change enough to continue iterating")
+  }
+} 
   #M-step: ML parameter estimation from the data and fractional component assignments
   # Your code here
+  
 }
 pi
 mu
 plot(llik[1:it], type="o")
 
-
-
-
+#
+x<-0
+while (x < 5){
+  print (x)
+  x<-x+1
+  
+  if (x>2){
+    stop ("Iteration stopped")
+  }
+}
 
 
 
