@@ -275,12 +275,17 @@ for(it in 1:max_it) {
   Sys.sleep(0.5)
   # E-step: Computation of the fractional component assignments
   #Compute p(znk ∣x n,µ,π) for all n
-  for (i in 1:K){
-    for (j in 1:N){
-      #slide 6
-      z[j, i]<-prod((mu[i,]**(x[j,])), ((1-mu[i,])**(1-x[j,]))) * pi[i]
+  for (k in 1:K){
+    for (n in 1:N){
+      for (d in 1:D){
+        #slide 6
+        #z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
+        z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
+      }
     }
   }
+  
+  z<-z/rowSums(z)
   # Your code here
   #Log likelihood computation.
   # Your code here
