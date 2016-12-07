@@ -281,16 +281,21 @@ for(it in 1:max_it) {
     for (n in 1:N){
       for (d in 1:D){
         #slide 6
-        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
+        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) #* pi[k] 
         #z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
       }
     }
   }
   #Här är divisionen för p(znk ∣x n,µ,π) enl slide 9.
-  z<-z/rowSums(z)
+  #z<-z/rowSums(z)
   #ENLIGT RASMUS SKA JAG TA BORT pi[k] och ovanstaaende z-beräkning i detta lage och ta det senare, för att 
-  #underlätta loglikelihood-berakningen. Dvs bara hashtaggade bort *pi[k] på rad 284 och hela 290.
- 
+  #underlätta loglikelihood-berakningen. Dvs bara hashtaggade bort *pi[k] på rad 284 och hela 290 och ta 
+  #nedanstående beräkningar senare.
+#z[,1]<-z[,1]*pi[1]
+#z[,2]<-z[,2]*pi[2]
+#z[,3]<-z[,3]*pi[3]
+#z/rowSums(z)
+  
   #Log likelihood computation.
   # Your code here
   #sum_n LOG sum_k pi_k p(x_n | mu_k)

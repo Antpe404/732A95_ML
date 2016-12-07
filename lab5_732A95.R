@@ -9,7 +9,7 @@ library(geosphere)
 #temps <- read.csv("temps50k.csv")
 st <- merge(stations,temps,by="station_number")
 h_distance <- # These three values are up to the students
-  h_date <- #dessa är alltså smoothing factors.
+  h_date <- #dessa tre är alltså smoothing factors.
   h_time <-
   a <- 58.4274 # The point to predict (up to the students)
 b <- 14.826
