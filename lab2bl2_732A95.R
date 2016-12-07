@@ -288,7 +288,8 @@ for(it in 1:max_it) {
   }
   #Här är divisionen för p(znk ∣x n,µ,π) enl slide 9.
   z<-z/rowSums(z)
-  
+  #ENLIGT RASMUS SKA JAG TA BORT pi[k] och ovanstaaende z-beräkning i detta lage och ta det senare, för att 
+  #underlätta loglikelihood-berakningen. Dvs bara hashtaggade bort *pi[k] på rad 284 och hela 290.
  
   #Log likelihood computation.
   # Your code here
@@ -311,6 +312,8 @@ sumloglik<-integer(0)
 
 llik[it]<-sum(sumloglik)
   
+#HAR OVAN KUKAR JAG UR. RASMUS: slide 4, Sum over alla x, log av det uttrycket.
+#dvs log(sum_k(p(k)*p(x|k))) och summera over alla X.
   
   cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
   flush.console()
