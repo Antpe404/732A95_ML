@@ -25,11 +25,26 @@ gau_kernel<-function(x, xnew, h){
   svar<-exp(-((x-xnew)**2)/h) #h motsvarar 2sd^2
   return(svar)
   }
-
 dist_ker<-gau_kernel(x=distances, xnew=0,h=h_distance)
 plot(x=1:50000, sds)
 
 time_ker<-gau_kernel(x=passage_of_time, xnew=)
+
+#Tror nedan är rätt eftersom jag bara har diff
+gauss_kernel<-function(diff, h){
+  svar<-exp(-((diff**2)/h)) #h motsvarar 2sd^2
+  return(svar)
+}
+
+dist_ker<-gauss_kernel(diff=dist_func(city_coord = nkpg_latlong), h=h_distance)
+plot(x=1:50000, dist_ker)
+
+time_ker<-gauss_kernel(diff=time_func(prediction_date=pred_date), h=h_date)
+plot(x=1:50000, time_ker)
+
+hour_ker<-gauss_kernel(diff=hour_func(), h=h_time)
+plot(x=1:50000, hour_ker)
+
 #############Börjar med att ta fram alla distances, vektorn med namnet distances.
 ?distHaversine()
 latlong<-data.frame(cbind(latitude=st$latitude, longitude=st$longitude))
@@ -64,7 +79,7 @@ difftime(time1 = pred_date, time2=dates[1])
 
 time_func<-function(prediction_date, dates=as.Date(st$date)){
 #dates<-as.Date(st$date)
-passage_of_time=difftime(time1 = prediction_date, time2=dates, units="days") 
+passage_of_time=as.numeric(difftime(time1 = prediction_date, time2=dates, units="days")) 
 #detta är antalet dagar fr alla mätningar till mitt datum
 return(passage_of_time)
 }
@@ -73,7 +88,7 @@ time_diff<-time_func(prediction_date=pred_date)
 
 ###############timmar-avstånden.
 
-hours<-substr(st$time, start=1, stop=8)
+hours<-substr((st$time), start=1, stop=8)
 
 hour_func<-function(time_to_predict=pred_time){
 hours_differential<-c(length(hours))
