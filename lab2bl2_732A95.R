@@ -267,7 +267,10 @@ for(k in 1:K) {
 }
 pi
 mu
+#em <- function(){ #Denna enbart för debugonce
+
 for(it in 1:max_it) {
+  #it<-2
   plot(mu[1,], type="o", col="blue", ylim=c(0,1))
   points(mu[2,], type="o", col="red")
   points(mu[3,], type="o", col="green")
@@ -281,13 +284,13 @@ for(it in 1:max_it) {
     for (n in 1:N){
       for (d in 1:D){
         #slide 6
-        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) #* pi[k] 
+        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
         #z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
       }
     }
   }
   #Här är divisionen för p(znk ∣x n,µ,π) enl slide 9.
-  #z<-z/rowSums(z)
+  z<-z/rowSums(z)
   #ENLIGT RASMUS SKA JAG TA BORT pi[k] och ovanstaaende z-beräkning i detta lage och ta det senare, för att 
   #underlätta loglikelihood-berakningen. Dvs bara hashtaggade bort *pi[k] på rad 284 och hela 290 och ta 
   #nedanstående beräkningar senare.
@@ -300,22 +303,19 @@ for(it in 1:max_it) {
   # Your code here
   #sum_n LOG sum_k pi_k p(x_n | mu_k)
   # i.e. prod_i p(x_ni | mu_ki)=prod_i (mu_ki)^x_ni (1-mu_ki)^(1-x_ni).
-sumloglik<-integer(0)
 
+  #slide8
+  secondpart<-integer(0)
+  vector<-integer(0)
   for (n in 1:N){
     for (k in 1:K){
-      felen<-0
-      for (d in 1:D){
-    
-        felen<-felen+(x[n, d]*log(mu[k, d]))+((1-x[n, d])*log(1-mu[k, d]))
-        
-        }
-        llik[k]<-z[n, k]*(log(pi[k])+felen)
-      }
-    #sumloglik[n]<-sum(llik)
+      firstpart<-x[n,]*log(mu[k,])+(1-x[n,])*log(1-mu[k,])
+      secondpart[k]<-z[n,k]*(log(pi[k])+sum(firstpart))
+    }
+    vector[n]<-sum(secondpart)
   }
 
-llik[it]<-sum(sumloglik)
+llik[it]<-sum(vector)
   
 #HAR OVAN KUKAR JAG UR. RASMUS: slide 4, Sum over alla x, log av det uttrycket.
 #dvs log(sum_k(p(k)*p(x|k))) och summera over alla X.
@@ -324,29 +324,42 @@ llik[it]<-sum(sumloglik)
   flush.console()
   # Stop if the lok likelihood has not changed significantly
   # Your code here
-while (it > 1){
-  if ((abs(llik[it]-llik[it-1]))<minchange){
+if (it > 1){
+  if ((abs(llik[it]-llik[it-1]))<min_change){
     stop("The likelihood doesn't change enough to continue iterating")
   }
 } 
   #M-step: ML parameter estimation from the data and fractional component assignments
   # Your code here
-  
-}
+  pi <- colSums(z) / nrow(z) 
+  #sum(pi)
+  #mu<-matrix(nrow = dim(mu)[1], ncol=dim(mu)[2])
+  for (k in 1:K){
+    for (dim in 1:D){ 
+      mu[k,dim] <- sum( z[,k]*x[,dim] )/sum( z[,k] )
+    }
+  }  
+#sum(z[,1]*x[,2]) / sum(z[,1]) ser ut att funka  
+  #print(pi)
+  #print (mu)
+}  
+#}Denna belongs to debugonce
+#mu uppdaterar inget, alltså är identisk, när kört igenom it =2 som när it=1.
+#Det verkar bero på att z inte uppdateras då heller. Ingen aning om varför dock.hora.
 pi
 mu
 plot(llik[1:it], type="o")
 
 #
-x<-0
-while (x < 5){
-  print (x)
-  x<-x+1
-  
-  if (x>2){
-    stop ("Iteration stopped")
-  }
-}
+#x<-0
+#while (x < 5){
+ # print (x)
+#  x<-x+1
+#  
+#  if (x>2){
+#    stop ("Iteration stopped")
+#  }
+#}
 
 
 
