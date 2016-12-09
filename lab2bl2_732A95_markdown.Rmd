@@ -110,7 +110,7 @@ trees_fulldataset[[3]]
 ```
 
 
-##Assignment 4
+##Assignment 4 Adaboost
 
 The first task is the evualute the Adaboost algorithm and it's performance in classification trees. As in assignment 2, I use 2/3 as training data and 1/3 as test data. The required plot is shown below the code that produces it.
 
@@ -154,4 +154,38 @@ number_of_trees_plot
 
 ```
 
+From the plot above I conclude that around 40 trees/iterations seems to be optimal. More iterations than that only improves the performance barely. According to the \textit{elbow} I would say 40 is a good number of iterations in this case. Note that iterations is represented by "Number of trees" in the plot, since every iteration generates a tree.
+
+##Assignment 4 random forest
+
+The second task is the evualute the performance of random forests. I still use 2/3 as training data and 1/3 as test data. The required plot is shown below the code that produces it.
+
+```{r, echo=T, warning=F, message=F}
+sekvens<-seq(10,100, 10)
+training_errors_rf<-integer()
+test_errors_rf<-integer()
+index<-1
+for (i in sekvens){
+  modellen_rf<-randomForest(Spam ~ ., data=spam_tr, ntree=i, norm.votes=FALSE)
+  
+  tr_tab<-table(predict(modellen_rf, newdata= spam_tr, type="class"), spam_tr$Spam)
+  training_errors_rf[index]<-1-sum(diag(tr_tab))/sum(tr_tab)
+  
+  test_tab<-table(predict(modellen_rf, newdata= spam_te, type="class"), spam_te$Spam)
+  test_errors_rf[index]<-1-sum(diag(test_tab))/sum(test_tab)
+  index<-index+1
+}
+#training_errors_rf
+#test_errors_rf
+
+plotredo_rf<-data.frame(cbind(sekvens,training_errors_rf, test_errors_rf))
+
+ggplot(data=plotredo_rf)+geom_point(aes(x=sekvens, y=training_errors_rf, col="error train"))+
+  geom_line(aes(x=sekvens, y=training_errors_rf, col="error train"))+
+  geom_point(aes(x=sekvens, y=test_errors_rf, col="error test"))+
+  geom_line(aes(x=sekvens, y=test_errors_rf, col="error test"))+xlab("Number of trees")+
+  ylab("Error rate")+ggtitle("Evaluation of random forest")
+
+
+```
 

@@ -141,11 +141,14 @@ modellen<-blackboost(Spam~., data=spam_tr, family=AdaExp(), control=boost_contro
 
 predict(modellen, newdata=spam_te, type="class")
 tejbell_test<-table(pred=predict(modellen, newdata= spam_te, type="class"), truth=spam_te$Spam)
-
+tejbell_test
 error_rate_test<-1-sum(diag(tejbell_test))/sum(tejbell_test)
+error_rate_test
 
 tejbell_train<-table(predict(modellen, newdata= spam_tr, type="class"), spam_tr$Spam)
+tejbell_train
 error_rate_train<-1-sum(diag(tejbell_train))/sum(tejbell_train)
+error_rate_train
 #Sahar kan man ocksa rakna.
 1 - (sum(predict(modellen, spam_te, type="class") == spam_te$Spam) / nrow(spam_te))
 
@@ -175,11 +178,11 @@ ggplot(data=plotredo_ct)+geom_point(aes(x=sekvens, y=training_errors, col="error
 
 
 
-#----------------------------------Adaboost classification tree-------------------------------------------
+#----------------------------------random forest kladd-------------------------------------------
 #Kladd
 randomForest()
 set.seed(1234567890)
-modellen_rf<-randomForest(Spam ~ ., data=spam_tr, ntree=100, norm.votes=T)
+modellen_rf<-randomForest(Spam ~ ., data=spam_tr, ntree=10, norm.votes=T)
 
 modellen_rf
 modellen_rf$err.rate
@@ -199,7 +202,7 @@ predict(modellen_rf, newdata=spam_tr, type="class")
 predict(modellen_rf, newdata=spam_tr, type="class")==predict(modellen_rf)
 
 
-#----------------------------------Adaboost classification tree-------------------------------------------
+#----------------------------------random forest-------------------------------------------
 sekvens<-seq(10,100, 10)
 training_errors_rf<-integer()
 test_errors_rf<-integer()
@@ -224,9 +227,7 @@ ggplot(data=plotredo_rf)+geom_point(aes(x=sekvens, y=training_errors_rf, col="er
   geom_line(aes(x=sekvens, y=training_errors_rf, col="error train"))+
   geom_point(aes(x=sekvens, y=test_errors_rf, col="error test"))+
   geom_line(aes(x=sekvens, y=test_errors_rf, col="error test"))+xlab("Number of trees")+
-  ylab("Error rate")+ggtitle("Evaluation of Adaboost, random tree")
-
-
+  ylab("Error rate")+ggtitle("Evaluation of random forest")
 
 
 
