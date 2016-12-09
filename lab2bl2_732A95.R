@@ -50,11 +50,12 @@ upperbound<-mean(felen_upper)
 #borjar med att sampla 
 #set.seed(1234567890)
 
-folds<-3
-set.seed(1234567890)
-bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
-folds_data<-suppressWarnings(split(bodyfat_samplad, 1:folds)) 
+#folds<-3
+#set.seed(1234567890)
+#bodyfat_samplad<-bodyfat[sample(1:nrow(bodyfat)),]
+#folds_data<-suppressWarnings(split(bodyfat_samplad, 1:folds)) 
 
+folds<-3
 baggingar<-100
 set.seed(1234567890)
 folds_data<-suppressWarnings(split(bodyfat, 1:folds)) 
@@ -97,7 +98,7 @@ for ( i in 1:100){
   saf<-sample(1:nrow(bodyfat), replace=T)
   bodyfat_bag<-bodyfat[saf,]
   fat_tree<-tree(formula=Bodyfat_percent~., data=bodyfat_bag, split="deviance")
-  trees_fulldataset[i]<-fat_tree
+  trees_fulldataset[[i]]<-fat_tree
 }
 
 #So, if im getting this right, the hundred trees in the list below is what i'd return the customer.
