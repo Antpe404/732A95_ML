@@ -189,3 +189,123 @@ ggplot(data=plotredo_rf)+geom_point(aes(x=sekvens, y=training_errors_rf, col="er
 
 ```
 
+The test error seems to be minimized at 40 iterations in this case, the random forest, as well. After 40 trees, the test error actually increases in this case. Looking at the training error, I conclude that the improvement almost stops after 20 trees. I suppose that means that the model manages to model the training data as good as it gets after 20 trees already.
+
+#Lab2b block 2
+
+The second part of the lab, lab2b, is about the EM-algorithm.
+
+##Assignment 1
+
+I used the attached template to implement the EM algorithm, in this case with a mixture of multivariate Bernoulli distributions. The code and it's result is shown below.
+
+```{r, echo=T}
+set.seed(1234567890)
+max_it <- 100 # max number of EM iterations
+min_change <- 0.1 # min change in log likelihood between two consecutive EM iterations
+N=1000 # number of training points
+D=10 # number of dimensions
+x <- matrix(nrow=N, ncol=D) # training data
+true_pi <- vector(length = 3) # true mixing coefficients
+true_mu <- matrix(nrow=3, ncol=D) # true conditional distributions
+true_pi=c(1/3, 1/3, 1/3)
+true_mu[1,]=c(0.5,0.6,0.4,0.7,0.3,0.8,0.2,0.9,0.1,1)
+true_mu[2,]=c(0.5,0.4,0.6,0.3,0.7,0.2,0.8,0.1,0.9,0)
+true_mu[3,]=c(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5)
+#plot(true_mu[1,], type="o", col="blue", ylim=c(0,1))
+#points(true_mu[2,], type="o", col="red")
+#points(true_mu[3,], type="o", col="green")
+
+# Producing the training data
+for(n in 1:N) {
+  k <- sample(1:3,1,prob=true_pi)
+  for(d in 1:D) {
+    x[n,d] <- rbinom(1,1,true_mu[k,d])
+  }
+}
+K=3 # number of guessed components
+z <- matrix(nrow=N, ncol=K) # fractional component assignments
+pi <- vector(length = K) # mixing coefficients
+mu <- matrix(nrow=K, ncol=D) # conditional distributions
+llik <- vector(length = max_it) # log likelihood of the EM iterations
+# Random initialization of the paramters
+pi <- runif(K,0.49,0.51)
+pi <- pi / sum(pi)
+for(k in 1:K) {
+  mu[k,] <- runif(D,0.49,0.51)
+}
+#pi
+#mu
+
+
+
+for(it in 1:max_it) {
+  
+  #plot(mu[1,], type="o", col="blue", ylim=c(0,1))
+  #points(mu[2,], type="o", col="red")
+  #points(mu[3,], type="o", col="green")
+  #points(mu[4,], type="o", col="yellow")
+  #Sys.sleep(0.5)
+  
+  bern<-matrix(1,nrow=N, ncol=K)
+  for (k in 1:K){
+    for (n in 1:N){
+      for (d in 1:D){
+        #slide 6
+        bern[n, k]<-bern[n,k]*(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) 
+      }
+    }
+  }
+  
+  # E-step: Computation of the fractional component assignments
+  #Your code here
+  #Compute p(znk given x n,mu,pi) for all n
+  #slide 9
+  for (k in 1:K){
+    for (n in 1:N){
+      z[n, k]<-bern[n,k] * pi[k] / sum(bern[n, ]*pi)
+    }
+  }
+  #Här är divisionen för p(znk given x n,mu,pi) enl slide 9.
+  
+  #slide8
+  secondpart<-integer(0)
+  vector<-integer(0)
+  firstpart<-integer(0)
+  for (n in 1:N){
+    for (k in 1:K){
+      firstpart[k]<-pi[k]*(bern[n,k])
+      
+    }
+    secondpart[n]<-sum((firstpart))
+    
+  }
+  
+  llik[it]<-sum(log(secondpart))
+  
+  
+  cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
+  flush.console()
+  # Stop if the lok likelihood has not changed significantly
+  # Your code here
+  if (it > 1){
+    if ((abs(llik[it]-llik[it-1]))<min_change){
+      cat("The likelihood doesn't change enough to continue iterating")
+      break
+    }
+  } 
+  #M-step: ML parameter estimation from the data and fractional component assignments
+  # Your code here
+  pi <- colSums(z) / nrow(z) 
+  #slide 10
+  for (k in 1:K){
+    for (dim in 1:D){ 
+      mu[k,dim] <- sum( z[,k]*x[,dim] )/sum( z[,k] )
+    }
+  }  
+}  
+pi
+mu
+plot(llik[1:it], type="o", ylab="Log likelihood")
+```
+

@@ -233,7 +233,6 @@ ggplot(data=plotredo_rf)+geom_point(aes(x=sekvens, y=training_errors_rf, col="er
 
 ##########################2B, dvs andra delen av labben############################################
 #Assignment 1
-
 set.seed(1234567890)
 max_it <- 100 # max number of EM iterations
 min_change <- 0.1 # min change in log likelihood between two consecutive EM iterations
@@ -267,90 +266,81 @@ pi <- pi / sum(pi)
 for(k in 1:K) {
   mu[k,] <- runif(D,0.49,0.51)
 }
-pi
-mu
-#em <- function(){ #Denna enbart för debugonce
+#pi
+#mu
+
+
 
 for(it in 1:max_it) {
-  #it<-2
+  
   plot(mu[1,], type="o", col="blue", ylim=c(0,1))
   points(mu[2,], type="o", col="red")
   points(mu[3,], type="o", col="green")
   #points(mu[4,], type="o", col="yellow")
   Sys.sleep(0.5)
+  
+  bern<-matrix(1,nrow=N, ncol=K)
+  for (k in 1:K){
+    for (n in 1:N){
+      for (d in 1:D){
+        #slide 6
+        bern[n, k]<-bern[n,k]*(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) 
+      }
+    }
+  }
+  
   # E-step: Computation of the fractional component assignments
   #Your code here
   #Compute p(znk ∣x n,µ,π) for all n
   #slide 9
   for (k in 1:K){
     for (n in 1:N){
-      for (d in 1:D){
-        #slide 6
-        z[n, k]<-prod((mu[k,d]**(x[n,d])), ((1-mu[k,d])**(1-x[n,d]))) * pi[k] 
-        #z[n, k]<-(mu[k,d]**(x[n,d])) * ((1-mu[k,d])**(1-x[n,d])) * pi[k] 
-      }
+      z[n, k]<-bern[n,k] * pi[k] / sum(bern[n, ]*pi)
     }
   }
   #Här är divisionen för p(znk ∣x n,µ,π) enl slide 9.
-  z<-z/rowSums(z)
-  #ENLIGT RASMUS SKA JAG TA BORT pi[k] och ovanstaaende z-beräkning i detta lage och ta det senare, för att 
-  #underlätta loglikelihood-berakningen. Dvs bara hashtaggade bort *pi[k] på rad 284 och hela 290 och ta 
-  #nedanstående beräkningar senare.
-#z[,1]<-z[,1]*pi[1]
-#z[,2]<-z[,2]*pi[2]
-#z[,3]<-z[,3]*pi[3]
-#z/rowSums(z)
   
-  #Log likelihood computation.
-  # Your code here
-  #sum_n LOG sum_k pi_k p(x_n | mu_k)
-  # i.e. prod_i p(x_ni | mu_ki)=prod_i (mu_ki)^x_ni (1-mu_ki)^(1-x_ni).
-
   #slide8
   secondpart<-integer(0)
   vector<-integer(0)
+  firstpart<-integer(0)
   for (n in 1:N){
     for (k in 1:K){
-      firstpart<-x[n,]*log(mu[k,])+(1-x[n,])*log(1-mu[k,])
-      secondpart[k]<-z[n,k]*(log(pi[k])+sum(firstpart))
+      firstpart[k]<-pi[k]*(bern[n,k])
+      
     }
-    vector[n]<-sum(secondpart)
+    secondpart[n]<-sum((firstpart))
+    
   }
-
-llik[it]<-sum(vector)
   
-#HAR OVAN KUKAR JAG UR. RASMUS: slide 4, Sum over alla x, log av det uttrycket.
-#dvs log(sum_k(p(k)*p(x|k))) och summera over alla X.
+  llik[it]<-sum(log(secondpart))
+  
   
   cat("iteration: ", it, "log likelihood: ", llik[it], "\n")
   flush.console()
   # Stop if the lok likelihood has not changed significantly
   # Your code here
-if (it > 1){
-  if ((abs(llik[it]-llik[it-1]))<min_change){
-    stop("The likelihood doesn't change enough to continue iterating")
-  }
-} 
+  if (it > 1){
+    if ((abs(llik[it]-llik[it-1]))<min_change){
+      cat("The likelihood doesn't change enough to continue iterating")
+      break
+    }
+  } 
   #M-step: ML parameter estimation from the data and fractional component assignments
   # Your code here
   pi <- colSums(z) / nrow(z) 
-  #sum(pi)
-  #mu<-matrix(nrow = dim(mu)[1], ncol=dim(mu)[2])
+  #slide 10
   for (k in 1:K){
     for (dim in 1:D){ 
       mu[k,dim] <- sum( z[,k]*x[,dim] )/sum( z[,k] )
     }
   }  
-#sum(z[,1]*x[,2]) / sum(z[,1]) ser ut att funka  
-  #print(pi)
-  #print (mu)
 }  
-#}Denna belongs to debugonce
-#mu uppdaterar inget, alltså är identisk, när kört igenom it =2 som när it=1.
-#Det verkar bero på att z inte uppdateras då heller. Ingen aning om varför dock.hora.
+
 pi
 mu
-plot(llik[1:it], type="o")
+plot(llik[1:it], type="o", ylab="Log likelihood")
+
 
 #
 #x<-0
