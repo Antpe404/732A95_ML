@@ -14,7 +14,7 @@ h_distance <- 100000 # These three values are up to the students
 a <- 58.4274 # The point to predict (up to the students)
 b <- 14.826
 
-pred_date <- as.Date("2016-12-24") # The date to predict (up to the students)
+pred_date <- as.Date("2010-12-24") # The date to predict (up to the students)
 times <- c("02:00:00","04:00:00", "06:00:00","08:00:00","10:00:00","12:00:00","14:00:00","16:00:00","18:00:00","20:00:00","22:00:00", "24:00:00")
 pred_time<-("12:00:00")
 temp <- vector(length=length(times))
@@ -130,7 +130,7 @@ for (i in 1:length(times)){
                    pred_date = as.Date("2016-07-24"))
 }
 
-hourly_predictions2<-data.frame(cbind(times, temp=round(temp, 5)))
+hourly_predictions_summer<-data.frame(cbind(times, temp=round(temp, 5)))
 
 #Detta beror på att time_ker blir så jävla liten, så den påverkar inte alls. Det enda som räknas in är alltså
 #distance och tid på dygnet, vilket ju är samma för vinter och sommar. Detta eftersom jag predikterar så långt 
@@ -224,3 +224,6 @@ hourly_predictions_multi<-data.frame(cbind(times, temp=round(temp, 5)))
 #head(dates)<as.Date("2003-01-01")
 #paste(head(dates), head(hours))<paste(pred_date, pred_time)
 #paste(head(dates), head(hours))<paste(as.Date("2000-01-01"), pred_time)
+#När cuttad på julafton 2010: Ser ergo ut att funka.
+#max(as.Date(data$date))
+#[1] "2010-12-23"
