@@ -186,6 +186,13 @@ for (i in 1:length(times)){
 
 hourly_predictions2<-data.frame(cbind(times, temp=round(temp, 5)))
 
+#Detta beror på att time_ker blir så jävla liten, så den påverkar inte alls. Det enda som räknas in är alltså
+#distance och tid på dygnet, vilket ju är samma för vinter och sommar. Detta eftersom jag predikterar så långt 
+#fram i nuläget, alltså julafton i år. Alla time_ker blir assmå. Jag skulle kunna göra den kerneln cyklisk också,
+#på samma sätt som hour. Dvs antal veckor ifrån prediktering tex. Det skulle göra att man tappade den linjära
+#trenden i passage_of_time, men göra den till en "tid på året"-kernel istället. Detta är dock ett mindre problem
+#om prediktionen görs på ett datum med data ikring.
+
 for (i in 1:length(times)){
   temp[i]<-totfunk(h_time=2, h_date=7, h_distance=100000, city_coord=c(a,b), pred_time=times[i],
                    pred_date = as.Date("2016-07-24"))
