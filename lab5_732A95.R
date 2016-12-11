@@ -153,7 +153,10 @@ totfunk<-function(data=st, h_time, h_date, h_distance, city_coord, pred_time, pr
   hour_ker<-gauss_kernel(diff=hour_func(time_to_predict=pred_time, hours=hours), h=h_time)
   
   predict<-(sum((dist_ker*data$air_temperature)+(time_ker*data$air_temperature)+(hour_ker*data$air_temperature)))/
-    sum(hour_ker+ time_ker+ dist_ker)
+    sum(hour_ker + time_ker + dist_ker)
+  
+  #predict<-sum((prod((dist_ker*data$air_temperature),(time_ker*data$air_temperature),(hour_ker*data$air_temperature))))/
+    #prod(sum(hour_ker),sum(time_ker),sum(dist_ker))
   return(predict)
 }
 
@@ -175,3 +178,17 @@ for (i in 1:length(times)){
 }
 
 hourly_predictions<-data.frame(cbind(times, temp=round(temp, 5)))
+
+for (i in 1:length(times)){
+  temp[i]<-totfunk(h_time=2, h_date=7, h_distance=100000, city_coord=c(a,b), pred_time=times[i],
+                   pred_date = as.Date("2016-07-24"))
+}
+
+hourly_predictions2<-data.frame(cbind(times, temp=round(temp, 5)))
+
+for (i in 1:length(times)){
+  temp[i]<-totfunk(h_time=2, h_date=7, h_distance=100000, city_coord=c(a,b), pred_time=times[i],
+                   pred_date = as.Date("2016-07-24"))
+}
+
+hourly_predictions_multi<-data.frame(cbind(times, temp=round(temp, 5)))
