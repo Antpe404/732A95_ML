@@ -35,3 +35,8 @@ pamr.plotcv(cv_model)
 #koden stulen fr:
 #https://liuonline.sharepoint.com/sites/732A95/732A95-2016HT/CourseDocuments/lecture3b_bl2.pdfhttps://liuonline.sharepoint.com/sites/732A95/732A95-2016HT/CourseDocuments/lecture3b_bl2.pdf
 #slide 11
+
+
+#1.2
+#a
+#	Elastic net, binomial response and alpha=0.5, penalty selected by cross-validation
