@@ -32,6 +32,7 @@ winit <- runif(n = 3*units+1 , min=-1, max=1) #10 för input, 10 hidden, 10 outp
   #Report the chosen value for the threshold
   thresholds<-seq(1/1000, 1/100, 0.001)
   chosen_value<-thresholds[length(felen[felen>0])-1]
+  chosen_value
   
   #Will now report the final NN learnt
   final_nn <- neuralnet(formula = Sin~Var, data=tr, threshold = chosen_value, hidden=10, startweights = winit )
