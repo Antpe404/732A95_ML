@@ -129,4 +129,49 @@ colnames(comparison_table)<-c("NSC", "Elastic", "SVM")
 rownames(comparison_table)<-c("# of features", "test_error_rate")
 comparison_table[1,]<-as.integer(comparison_table[1,])
 comparison_table
+#Prolly choose SVM. Lowest test error. That's fucking why?
 #---------------------------------------------------------------------------------------#
+
+#1.3
+
+pvalues<-vector(length=ncol(data)-1)
+for (i in 1:(ncol(data)-1)){
+ pvalues[i]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
+}
+#low p-values indicating that I reject H0: has no effect on target.
+
+head(pvalues)
+pvalues<-as.data.frame(pvalues, ncol=1)
+rownames(pvalues)<-colnames(data)[1:(ncol(data)-1)]
+
+pvalues[,1]<-sort(pvalues[,1])
+
+pvalues<-data.frame(matrix(NA, nrow = ncol(data)-1, ncol = 2))
+for (i in 1:(ncol(data)-1)){
+  pvalues[i,2]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
+  pvalues[i,1]<-paste(colnames(data)[i])
+}
+colnames(pvalues)<-c("variable", "p-value")
+pvalues<-pvalues[order(pvalues$`p-value`), ]
+
+plot(x=1:nrow(pvalues), y=pvalues[,2], xlab="features ordered by p-value", ylab="p-value", las=1)
+#--------------------------------KLADD----------------------------------------
+res<-t.test(X10th~Conference,data=data,
+            alternative="two.sided")
+res<-t.test(X000euro~Conference,data=data,
+            alternative="two.sided")
+
+res<-t.test(papers~Conference,data=data, alternative="two.sided") #papers significant, rimligt.
+
+#which(colnames(data)=="papers") 3036
+res$p.value
+
+res<-t.test(data[,1]~data[, 4703], alternative="two.sided")
+res<-t.test(data[,3036]~data[, 4703], alternative="two.sided")
+
+res$p.value
+
+test2<-oneway.test(X10th~Conference, data=data,paired=FALSE)
+
+#test<-lm(as.numeric(Conference)~X000euro-1, data=data)
+#summary(test)
