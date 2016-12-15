@@ -256,8 +256,40 @@ SVM <- function(sv,i) { # SVM on point i with support vectors sv
   # You can use dist() to compute the Euclidean distance
 }
 
+SVM<-function(sv=c(1), h=1, b=0, N=500, M, beta){
+  errors <- 1
+  errorrate <- vector(length = N)
+  errorrate[1] <- 1
+  step4<-vector(length=N-1)
+  
+  for(i in 2:N) {
+    #sv<-1:2
+    #i<-1
+    x_i<-spam[i, -49] #step3
+    t_i<-spam[i, 49] #step3
+    x_m<-spam[sv, -49] #x_m
+    t_m<-spam[sv, 49]
+    distance<-as.matrix(dist(rbind(x_i, x_m), method="euclidean"))
+    step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
+    
+    yx_i<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b) #step4
+    if (t_i*yx_i<=beta){ #step5
+      sv<- c(sv, i) #step6
+      errors<-errors+1
+      #ignore step7
+      if (length(sv)>M){ #step 8
+        sv <- sv[-step8_func(sv=sv)]
+      }
+    }
+    errorrate[i] <- errors / i
+  }
+  plot(errorrate)
+}
 
-
+SVM(M=500, beta=0)
+SVM(M=500, beta=-.05)
+SVM(M=20, beta=0)
+SVM(M=20, beta=-0.05)
 #m_rad<-spam[sv, -49] #x_m
 #m_response<-spam[sv, 49] #t_m
 #x_m<-spam[1, -49] #x_m
