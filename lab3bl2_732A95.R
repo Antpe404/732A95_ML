@@ -218,6 +218,8 @@ spam <- spam[ind,c(1:48,58)] #Shufflar och ta bort
 h <- 1
 b<-0
 beta <- c(0, -.05)
+beta1<-0
+beta2<--.05
   M <- c(500, 20)
   M1<-500
   M2<-20
@@ -244,16 +246,29 @@ step4<-vector(length=N-1)
 
 #m_rad<-spam[sv, -49] #x_m
 #m_response<-spam[sv, 49] #t_m
-x_m<-spam[sv, -49] #x_m
-t_m<-spam[sv, 49] #t_m
+x_m<-spam[1, -49] #x_m
+t_m<-spam[1, 49] #t_m
+
+#x_m<-spam[sv, -49] #x_m
+#t_m<-spam[sv, 49] #t_m
 for(i in 2:N) {
-  x_i<-spam[i, -49]
-  t_i<-spam[i, 49]
-  distance<-dist(rbind(x_i, x_m), method="euclidean")
-  step4[i-1]<-sum(t_m*gaussian_k(x=distance, h=h)+b)
-  #ans<-sum(step4)
-  #anss<-sum(t_m*gaussian_k(x=distance, h=h)+b)
+  x_i<-spam[i, -49] #step3
+  t_i<-spam[i, 49] #step3
+  x_m<-spam[sv, -49] #x_m
+  t_m<-spam[sv, 49]
+  distance<-as.matrix(dist(rbind(x_i, x_m), method="euclidean"))
+  step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
+  
+  yx_i<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b) #step4
+  if (t_i*yx_i<=beta){ #step5
+    sv<- c(sv, i) #step6
+    #ignore step7
+    if (length(sv)>96){ #step 8
+      sv <- sv[-step8_func(sv=sv)]
+    }
+  }
 }
+
 sum(step4)
 plot(errorrate[seq(from=1, to=N, by=10)], ylim=c(0.2,0.4), type="o")
 length(sv)
@@ -272,3 +287,49 @@ m_rad
 test<-rbind(x_i, m_rad)
 test_dist<-as.matrix(dist(test, method="euclidean"))
 sum(m_response*gaussian_k(x=test_dist[-1,1], h=h)+b) #step4 slide, y(x_i)
+
+#function for y(x_i)
+y_av_x_i<-function(x_i, x_m, t_m){
+  for(i in 2:N) {
+    x_i<-spam[i, -49] #step3
+    t_i<-spam[i, 49] #step3
+    distance<-as.matrix(dist(rbind(x_i, x_m), method="euclidean"))
+    step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
+  }
+}
+
+
+step8_func<-function(sv){
+  #last_part<-vector(length=length(sv))
+  res<-vector(length=length(sv))
+  index<-1
+  for(m in sv){
+    #m<-234
+    rad_m<-spam[m, -49]
+    t_m<-spam[m, 49]
+    dis<-as.matrix(dist(rbind(rad_m,rad_m))) #sista delen av step 8
+    last_part<-t_m*gaussian_k(x=dis[-1,1], h=h) #sista delen av step8, med dis mellan samma vector
+    yxm<-step4[m]#Motsvarar y(x_m) in step8, calculated in last loop
+    res[index]<-t_m*(yxm-last_part)
+    index<-index+1
+  }
+  
+  return(which.max(res))
+}
+
+step8_func(sv=sv)
+
+
+
+
+
+step8 <- function(SV){
+  yxm <- c()
+  res<-c()
+  for (m in SV) {
+    distelement <- dist(cbind(spam[m,-ncol(spam)],spam[m,-ncol(spam)])) 
+    yxm[m] <-  spam[m,"Spam"]* gaussian_k(distelement)
+    res[m] <-  spam[m,"Spam"]*(step4(dataindex = spam[m,-ncol(spam)]) - yxm[m])
+  } 
+  return(which.max(res))
+}  
