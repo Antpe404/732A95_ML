@@ -153,19 +153,20 @@ for (j in 1:nrow(pvalues)){
   pvalues[j,3]<-(alpha*j)/nrow(pvalues)
 }
 
-pvalues$selected<-0
-pvalues[pvalues$pvalue<pvalues$Loss,4]<-1 #Sätter de med lägre p än Loss till 1.
+pvalues$selected<-"Not rejected"
+pvalues[pvalues$pvalue<pvalues$Loss,4]<-"Rejected" #Sätter de med lägre p än Loss till 1.
 pvalues$selected<-as.factor(pvalues$selected)
 
 plot(x=1:100, y=pvalues[1:100,2], col=pvalues$selected, xlab="features ordered by p-value",
      ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
+legend('topleft', legend = levels(pvalues$selected), col = 1:2, cex = 0.8, pch = 1)
 
 plot(x=1:nrow(pvalues), y=pvalues[,2], col=pvalues$selected, xlab="features ordered by p-value",
      ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
 
 #sum(pvalues$pvalue<pvalues$Loss)
-#I reject the first 39 hypotheses, i.e. i keep those variables. Since they are ordered, those are
-#the first 39 rows in pvalues-dataframe
+#I reject the first 39 hypotheses, i.e. i keep those variables to use in my model.
+#Since they are ordered, those are the first 39 rows in pvalues-dataframe
 
 selected_features_BH<-pvalues[pvalues$pvalue<pvalues$Loss, 1]
 
