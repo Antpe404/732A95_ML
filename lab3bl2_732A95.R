@@ -133,32 +133,50 @@ comparison_table
 #---------------------------------------------------------------------------------------#
 
 #1.3
+################Kladd################
 
-pvalues<-vector(length=ncol(data)-1)
-for (i in 1:(ncol(data)-1)){
- pvalues[i]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
-}
-#low p-values indicating that I reject H0: has no effect on target.
-
-head(pvalues)
-pvalues<-as.data.frame(pvalues, ncol=1)
-rownames(pvalues)<-colnames(data)[1:(ncol(data)-1)]
-
-pvalues[,1]<-sort(pvalues[,1])
-
+alpha<-0.05
 pvalues<-data.frame(matrix(NA, nrow = ncol(data)-1, ncol = 2))
 for (i in 1:(ncol(data)-1)){
   pvalues[i,2]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
   pvalues[i,1]<-paste(colnames(data)[i])
 }
-colnames(pvalues)<-c("variable", "p-value")
-pvalues<-pvalues[order(pvalues$`p-value`), ]
+colnames(pvalues)<-c("variable", "pvalue")
+pvalues<-pvalues[order(pvalues$pvalue), ]
 
-plot(x=1:nrow(pvalues), y=pvalues[,2], xlab="features ordered by p-value", ylab="p-value", las=1)
+plot(x=1:nrow(pvalues), y=pvalues$pvalue, 
+xlab="features ordered by p-value", ylab="p-value", las=1)
+
+
+pvalues$Loss<-NA
+for (j in 1:nrow(pvalues)){
+  pvalues[j,3]<-(alpha*j)/nrow(pvalues)
+}
+
+pvalues$selected<-0
+pvalues[pvalues$pvalue<pvalues$Loss,4]<-1 #Sätter de med lägre p än Loss till 1.
+pvalues$selected<-as.factor(pvalues$selected)
+
+plot(x=1:100, y=pvalues[1:100,2], col=pvalues$selected, xlab="features ordered by p-value",
+     ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
+
+plot(x=1:nrow(pvalues), y=pvalues[,2], col=pvalues$selected, xlab="features ordered by p-value",
+     ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
+
+#sum(pvalues$pvalue<pvalues$Loss)
+#I reject the first 39 hypotheses, i.e. i keep those variables. Since they are ordered, those are
+#the first 39 rows in pvalues-dataframe
+
+selected_features_BH<-pvalues[pvalues$pvalue<pvalues$Loss, 1]
+
+
 #--------------------------------KLADD----------------------------------------
 res<-t.test(X10th~Conference,data=data,
             alternative="two.sided")
 res<-t.test(X000euro~Conference,data=data,
+            alternative="two.sided")
+
+res<-t.test(members~Conference,data=data,
             alternative="two.sided")
 
 res<-t.test(papers~Conference,data=data, alternative="two.sided") #papers significant, rimligt.
@@ -175,3 +193,16 @@ test2<-oneway.test(X10th~Conference, data=data,paired=FALSE)
 
 #test<-lm(as.numeric(Conference)~X000euro-1, data=data)
 #summary(test)
+
+pvalues<-vector(length=ncol(data)-1)
+for (i in 1:(ncol(data)-1)){
+  pvalues[i]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
+}
+#low p-values indicating that I reject H0: has no effect on target.
+
+head(pvalues)
+pvalues<-as.data.frame(pvalues, ncol=1)
+rownames(pvalues)<-colnames(data)[1:(ncol(data)-1)]
+
+pvalues[,1]<-sort(pvalues[,1])
+#---------------------------------------------------------
