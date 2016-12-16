@@ -166,4 +166,58 @@ reslist2
 
 ```
 
-Finally the three methods used above, nearest shrunken centroid method, elastic net and support vector machine.
+Finally I compare the three methods used above, nearest shrunken centroid method, elastic net and support vector machine, by arranging a table with all the results. Watch it below! 
+
+```{r, echo=F}
+#######Comparison, last thing in ass 1.2##############
+comparison_table<-data.frame(cbind(rbind(number_of_features_NSC, test_error_rate_NSC), rbind(number_of_features_elastic, test_error_rate_elastic),
+rbind(number_of_features_svm, test_error_rate_svm)))
+
+colnames(comparison_table)<-c("NSC", "Elastic", "SVM")
+rownames(comparison_table)<-c("Number of features", "test_error_rate")
+comparison_table[1,]<-as.integer(comparison_table[1,])
+comparison_table
+
+```
+
+From the table I conclude that I'd probably choose the SVM. It uses the most number of features (44) but also get the best error rate. 
+
+\newpage
+
+##Assignment 1.3
+
+In this assignment I implemented the Benjamini Hochberg method on the complete original data, not the training set only. To begin with, the result is visualized by the plot below.
+
+```{r, echo=F}
+#1.3
+
+alpha<-0.05
+pvalues<-data.frame(matrix(NA, nrow = ncol(data)-1, ncol = 2))
+for (i in 1:(ncol(data)-1)){
+  pvalues[i,2]<- t.test(data[,i]~data[, which_col], alternative="two.sided")$p.value
+  pvalues[i,1]<-paste(colnames(data)[i])
+}
+colnames(pvalues)<-c("variable", "pvalue")
+pvalues<-pvalues[order(pvalues$pvalue), ] #sortar dem på pvalue.
+
+#plot(x=1:nrow(pvalues), y=pvalues$pvalue, 
+#xlab="features ordered by p-value", ylab="p-value", las=1, 
+#main="All features and their pvalues computed with t.test()")
+
+pvalues$Loss<-NA
+
+for (j in 1:nrow(pvalues)){
+  pvalues[j,3]<-(alpha*j)/nrow(pvalues)
+}
+
+pvalues$selected<-"Not rejected"
+pvalues[pvalues$pvalue<pvalues$Loss,4]<-"Rejected" #Sätter de med lägre p än Loss till 1.
+pvalues$selected<-as.factor(pvalues$selected)
+
+plot(x=1:200, y=pvalues[1:200,2], col=pvalues$selected, xlab="features ordered by p-value",
+     ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
+legend('topleft', legend = levels(pvalues$selected), col = 1:2, cex = 0.8, pch = 1)
+mtext("Only the 200 features with lowest p-value are shown")
+```
+
+Notice that in the plot above, only the first 200 features of the ordered data frame are plotted. That means that the features visualized in the plot only corresponds to the about 4 % of all features in the data. I did this because of the 4702 features tested, only 39 gets rejected. Those 39 rejected features are thus the features that are most useful for describing the feature \textit{Conference}.

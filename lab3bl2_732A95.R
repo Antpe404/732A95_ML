@@ -133,7 +133,6 @@ comparison_table
 #---------------------------------------------------------------------------------------#
 
 #1.3
-################Kladd################
 
 alpha<-0.05
 pvalues<-data.frame(matrix(NA, nrow = ncol(data)-1, ncol = 2))
@@ -142,13 +141,14 @@ for (i in 1:(ncol(data)-1)){
   pvalues[i,1]<-paste(colnames(data)[i])
 }
 colnames(pvalues)<-c("variable", "pvalue")
-pvalues<-pvalues[order(pvalues$pvalue), ]
+pvalues<-pvalues[order(pvalues$pvalue), ] #sortar dem på pvalue.
 
 plot(x=1:nrow(pvalues), y=pvalues$pvalue, 
-xlab="features ordered by p-value", ylab="p-value", las=1)
-
+xlab="features ordered by p-value", ylab="p-value", las=1, 
+main="All features and their pvalues computed with t.test()")
 
 pvalues$Loss<-NA
+
 for (j in 1:nrow(pvalues)){
   pvalues[j,3]<-(alpha*j)/nrow(pvalues)
 }
