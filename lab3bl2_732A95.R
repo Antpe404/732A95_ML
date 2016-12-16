@@ -77,6 +77,8 @@ test_y<-as.factor(test[,which_col])
 #cv.glmnet verkar vara crossvalidated samma.
 set.seed(12345)
 elastic<-cv.glmnet(x=train_x, y=train_y, alpha=.5, family="binomial")
+selected_penalty<-elastic$name
+
 plot(elastic)
 
 elastic$lambda
@@ -105,11 +107,12 @@ test_y
 library(kernlab)
 set.seed(12345)
 my_svm<-ksvm(x=train_x, y=train_y, kernel="vanilladot", scale=FALSE, type="C-svc")
-my_svm #training error 0.02222, 44 suppoert vectors
+my_svm #training error 0.02222, 44 support vectors
 my_svm@coef #the corresponding coefficients times the training labels.
 length(my_svm@coef[[1]])
 my_svm@error
-my_svm@nSV #The number of support vectors. Think this is the optimal size
+my_svm@nSV #The number of support vectors. This is not the number of features used
+#tho, since svm uses all features. This is the number of support vectors.
 
 fitted_svm<-predict(my_svm, test_x)
 conf_mat_svm<-table(preds=fitted_svm, truth=test_y)
@@ -117,7 +120,7 @@ conf_mat_svm
 
 test_error_rate_svm<-(conf_mat_svm[1,2]+conf_mat_svm[2,1])/sum(conf_mat_svm)
 
-number_of_features_svm<-my_svm@nSV
+number_of_features_svm<-ncol(train_x)
 
 #sum(predict(my_svm, train_x)==train_y) 44/45 rätt i träning->0.02222
 
@@ -160,6 +163,7 @@ pvalues$selected<-as.factor(pvalues$selected)
 plot(x=1:100, y=pvalues[1:100,2], col=pvalues$selected, xlab="features ordered by p-value",
      ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
 legend('topleft', legend = levels(pvalues$selected), col = 1:2, cex = 0.8, pch = 1)
+mtext("Only the 200 features with lowest p-value are shown")
 
 plot(x=1:nrow(pvalues), y=pvalues[,2], col=pvalues$selected, xlab="features ordered by p-value",
      ylab="p-value", las=1, main="Rejected hypotheses by Benjamini Hochberg method")
