@@ -166,3 +166,4 @@ reslist2
 
 ```
 
+Finally the three methods used above, nearest shrunken centroid method, elastic net and support vector machine.
