@@ -61,14 +61,20 @@ As seen above, the loops has stopped since the MSE hasn't improved more than the
   #Will now report the final NN learnt
   final_nn <- neuralnet(formula = Sin~Var, data=tr, threshold = chosen_value, hidden=10, startweights = winit )
   
-  chosen_value
   #plot(final_nn) Doesnt work
-
+  
+  chosen_value
 ```
+
+So, the output of the chunk tells me that the chosen value for the treshhold is 4/1000. The plot of the actual neural network is shown on the next page, to be able to visualize the whole picture as good as possible.
+
+\newpage
 
 ![](nn_plot.pdf)
 
 The black lines and values represent the connections and the respective weight for each connection in the network. The blue lines and their respective values represent the added bias in each step of the network.
+
+\newpage
 
 To plot the final results, i.e. the predicted values of the neural network and the observed data, I used the code below. 
 
