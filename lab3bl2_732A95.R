@@ -219,9 +219,10 @@ h <- 1
 b<-0
 #beta <- c(0, -.05)
 beta<-(-.05)
+beta<-0
 #beta2<--.05
  # M <- c(500, 20)
-  M<-500
+  M<-20
   #M2<-20
   N <- 500 # number of training points
 
