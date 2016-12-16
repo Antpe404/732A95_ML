@@ -39,6 +39,8 @@ winit <- runif(n = 3*units+1 , min=-1, max=1) #10 för input, 10 hidden, 10 outp
   
   plot(final_nn)
   
+  #dev.print(pdf, 'nn_plot.pdf')
+  
   plot(prediction(final_nn)$rep1, pch=18)
   points(trva, col="red", pch=1)
   legend('bottomleft',legend=c('NN','Observed'),pch=c(18,1),col=c('black','red'))
