@@ -87,3 +87,5 @@ To plot the final results, i.e. the predicted values of the neural network and t
 ```
 
 The plot above shows the observed values, all 50 points, as red circles. The black boxes in the plot represent the predicted values from the neural network. The fit seems really good, I'd say that the network seems to have learnt the trigonometric sin function.
+
+Finally, note that all the code used to solve this task is shown in this report, why I haven't attached them in an appendix.
