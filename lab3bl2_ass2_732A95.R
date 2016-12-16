@@ -105,7 +105,7 @@ for(i in 2:N) {
   x_m<-spam[sv, -49] #x_m
   t_m<-spam[sv, 49]
   distance<-as.matrix(dist(rbind(x_i, x_m), method="euclidean"))
-  step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
+  step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=H)+b)
   
   yx_i<-sum(t_m*gaussian_k(x=distance[-1,1], h=H)+b) #step4
   if (t_i*yx_i<=beta){ #step5
