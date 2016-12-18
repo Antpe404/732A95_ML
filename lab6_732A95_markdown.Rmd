@@ -59,18 +59,18 @@ As seen above, the loops has stopped since the MSE hasn't improved more than the
   chosen_value<-thresholds[length(felen[felen>0])-1]
 
   #Will now report the final NN learnt
-  final_nn <- neuralnet(formula = Sin~Var, data=tr, threshold = chosen_value, hidden=10, startweights = winit )
+  final_nn <- neuralnet(formula = Sin~Var, data=trva, threshold = chosen_value, hidden=10, startweights = winit )
   
   #plot(final_nn) Doesnt work
   
   chosen_value
 ```
 
-So, the output of the chunk tells me that the chosen value for the treshhold is 4/1000. The plot of the actual neural network is shown on the next page, to be able to visualize the whole picture as good as possible.
+So, the output of the chunk tells me that the chosen value for the treshhold is 4/1000. The plot of the actual neural network with, which is learnt with the full data set and the mentioned threshold, is shown on the next page, to be able to visualize the whole picture as good as possible.
 
 \newpage
 
-![](nn_plot.pdf)
+![](nn_plot2.pdf)
 
 The black lines and values represent the connections and the respective weight for each connection in the network. The blue lines and their respective values represent the added bias in each step of the network.
 

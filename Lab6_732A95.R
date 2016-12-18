@@ -35,11 +35,11 @@ winit <- runif(n = 3*units+1 , min=-1, max=1) #10 för input, 10 hidden, 10 outp
   chosen_value
   
   #Will now report the final NN learnt
-  final_nn <- neuralnet(formula = Sin~Var, data=tr, threshold = chosen_value, hidden=10, startweights = winit )
+  final_nn <- neuralnet(formula = Sin~Var, data=trva, threshold = chosen_value, hidden=10, startweights = winit )
   
   plot(final_nn)
   
-  #dev.print(pdf, 'nn_plot.pdf')
+  dev.print(pdf, 'nn_plot2.pdf')
   
   plot(prediction(final_nn)$rep1, pch=18)
   points(trva, col="red", pch=1)
