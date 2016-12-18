@@ -86,6 +86,9 @@ SVM<-function(sv=c(1), H=1, b=0, N=500, M, beta){
   }
   plot(errorrate, main=paste("Errorrate as a function of training points,
   M=", M, ", beta=", beta,".", sep=""), type="o")
+  
+  number_of_sv<-length(sv)
+  return(number_of_sv)
 }
 
 SVM(M=500, beta=0)
@@ -110,7 +113,7 @@ b<-0
 beta<-0
 #beta2<--.05
 # M <- c(500, 20)
-M<-20
+M<-500
 M2<-20
 N <- 500 # number of training points
 errors <- 1
@@ -149,3 +152,4 @@ plot(y=errorrate[seq(1,N,10)], x=1:N, type="o")
 
 
 plot(errorrate, main=paste("Errorrate over iterations, M=", M, ", beta=", beta,"."))
+
