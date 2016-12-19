@@ -4,17 +4,7 @@ spam$Spam[spam$Spam==0]<--1 #Convertar för att underlätta SVM:s.
 set.seed(1234567890)
 ind <- sample(1:nrow(spam))
 spam <- spam[ind,c(1:48,58)] #Shufflar och ta bort 
-#h <- 1
-#H<-1
-#b<-0
-#beta <- c(0, -.05)
-#beta<-(-.05)
-#beta<-0
-#beta2<--.05
-# M <- c(500, 20)
-#M<-20
-#M2<-20
-#N <- 500 # number of training points
+
 
 gaussian_k <- function(x, h) { # Gaussian kernel
   ans<-exp(-(x**2)/(2*h**2))
@@ -23,29 +13,19 @@ gaussian_k <- function(x, h) { # Gaussian kernel
 
 step8_func<-function(sv, h){
   b<-0
-  #last_part<-vector(length=length(sv))
   res<-vector(length=length(sv))
   index<-1
   for(m in sv){
-    #m<-234
     x_m<-spam[m, -49] #step3
     t_m<-spam[m, 49] #step3
     dis<-as.matrix(dist(rbind(x_m,x_m))) #sista delen av step 8
     last_part<-sum(t_m*gaussian_k(x=dis[-1,1], h=h)) #sista delen av step8, med dis mellan samma vector
-    #Nedan ist för step4[m]
-    x_sv<-spam[sv, -49] #x_m
+    
+    x_sv<-spam[sv, -49] 
     t_sv<-spam[sv, 49]
     distance<-as.matrix(dist(rbind(x_m, x_sv), method="euclidean"))
-    #step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=H)+b)
     yxm<-sum(t_sv*gaussian_k(x=distance[-1,1], h=h)+b) #step4
     
-    
-    #x_m<-spam[m, -49] #x_m
-    #t_m<-spam[m, 49]
-    #distance<-as.matrix(dist(rbind(x_m, x_m), method="euclidean"))
-    #yxm<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
-    #
-    #yxm<-step4[m]#Motsvarar y(x_m) in step8, calculated in last loop
     res[index]<-t_m*(yxm-last_part)
     index<-index+1
   }
@@ -61,8 +41,7 @@ SVM<-function(sv=c(1), H=1, b=0, N=500, M, beta){
   #step4<-vector(length=N-1)
   
   for(i in 2:N) {
-    #sv<-1:2
-    #i<-1
+  
     x_i<-spam[i, -49] #step3
     t_i<-spam[i, 49] #step3
     x_m<-spam[sv, -49] #x_m
@@ -153,3 +132,35 @@ plot(y=errorrate[seq(1,N,10)], x=1:N, type="o")
 
 plot(errorrate, main=paste("Errorrate over iterations, M=", M, ", beta=", beta,"."))
 
+#Nedan är även kladden för step8func:
+step8_func<-function(sv, h){
+  b<-0
+  #last_part<-vector(length=length(sv))
+  res<-vector(length=length(sv))
+  index<-1
+  for(m in sv){
+    #m<-234
+    x_m<-spam[m, -49] #step3
+    t_m<-spam[m, 49] #step3
+    dis<-as.matrix(dist(rbind(x_m,x_m))) #sista delen av step 8
+    last_part<-sum(t_m*gaussian_k(x=dis[-1,1], h=h)) #sista delen av step8, med dis mellan samma vector
+    #Nedan ist för step4[m]
+    x_sv<-spam[sv, -49] #x_m
+    t_sv<-spam[sv, 49]
+    distance<-as.matrix(dist(rbind(x_m, x_sv), method="euclidean"))
+    #step4[i-1]<-sum(t_m*gaussian_k(x=distance[-1,1], h=H)+b)
+    yxm<-sum(t_sv*gaussian_k(x=distance[-1,1], h=h)+b) #step4
+    
+    
+    #x_m<-spam[m, -49] #x_m
+    #t_m<-spam[m, 49]
+    #distance<-as.matrix(dist(rbind(x_m, x_m), method="euclidean"))
+    #yxm<-sum(t_m*gaussian_k(x=distance[-1,1], h=h)+b)
+    #
+    #yxm<-step4[m]#Motsvarar y(x_m) in step8, calculated in last loop
+    res[index]<-t_m*(yxm-last_part)
+    index<-index+1
+  }
+  #return(res)
+  return(which.max(res)) #tar ut den minst viktiga, i.e. max.
+}

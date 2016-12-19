@@ -20,14 +20,14 @@ mydata<-list(x=x,y=y,geneid=as.character(1:nrow(x)), genenames=rownames(x))
 model<-pamr.train(mydata,threshold=seq(0,4, 0.1))
 
 #-------------------------------KLADD
-pamr.plotcen(model, mydata, threshold=1)
-pamr.plotcen(model, mydata, threshold=2.5)
-a_model<-pamr.listgenes(model,mydata,threshold=2.5)
-a_model[,1] #Variablerna
-my_variables_index<-as.numeric(a_model[,1])
-my_variables<-colnames(data)[my_variables_index]
-cat(paste(my_variables, collapse="\n")) #Here they are listed in propar manner.
-length(my_variables)
+#pamr.plotcen(model, mydata, threshold=1)
+#pamr.plotcen(model, mydata, threshold=2.5)
+#a_model<-pamr.listgenes(model,mydata,threshold=2.5)
+#a_model[,1] #Variablerna
+#my_variables_index<-as.numeric(a_model[,1])
+#my_variables<-colnames(data)[my_variables_index]
+#cat(paste(my_variables, collapse="\n")) #Here they are listed in propar manner.
+#length(my_variables)
 #--------------------------------
 cv_model<-pamr.cv(model,mydata)
 cv_model$error#.13 lägst, fr 0.7-1.8 och 2.6
@@ -82,7 +82,12 @@ selected_penalty<-elastic$name
 plot(elastic)
 
 elastic$lambda
-elastic$
+elastic$cvm
+elastic$nzero
+#Rasmus nedan
+#en_optimal_lambda <- elastic$lambda[which.min(elastic$cvm)]
+#en_optimal_size <- elastic$nzero[which.min(elastic$cvm)]
+#en_penalty <- strsplit(elastic$name, " ")[[1]][2]
 
 elastic_coe<-coefficients(elastic)
 elastic_coeff<-elastic_coe[,1]
