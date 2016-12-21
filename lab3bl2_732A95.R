@@ -88,6 +88,7 @@ elastic$nzero
 #en_optimal_lambda <- elastic$lambda[which.min(elastic$cvm)]
 #en_optimal_size <- elastic$nzero[which.min(elastic$cvm)]
 #en_penalty <- strsplit(elastic$name, " ")[[1]][2]
+#Kan vara så att den har en inbyggd elbow-grej. Rasmus tar den minsta i elastic$cvm, medan jag uppenbarligen inte gör det
 
 elastic_coe<-coefficients(elastic)
 elastic_coeff<-elastic_coe[,1]
