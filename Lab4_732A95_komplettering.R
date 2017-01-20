@@ -4,6 +4,9 @@
 #Use NIRspectra.xls and Viscosity as a target variable in order to implement a linear regression model 
 #in which features are first M components in ICA analysis.
 
+library(ggplot2)
+library(fastICA)
+
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 
 part_one<-function(data=nir, y=Viscosity, M=3){
@@ -38,13 +41,12 @@ part_one()
 #Provide a plot showing a mean square prediction error of this model (cross-validation error) versus
 #number of ICA features selected. Compare with a corresponding ´plot in lab 4 and make conclusions
 
-library(ggplot2)
 
 CV_ica <- function(data=nir, folds, M) {
   Y<-data$Viscosity
   Y<-as.matrix(Y)
   CV<-integer(0)
-  resmat<-matrix(ncol=M, nrow=folds) #H?r vill jag l?gga in resultaten f?r olika antal features.
+  resmat<-matrix(ncol=M, nrow=folds) 
   
   for (j in 1:M){ 
 
@@ -56,13 +58,14 @@ CV_ica <- function(data=nir, folds, M) {
     p<-dim(X)[2]
     
     for (i in 1:folds){
+      slumpat<-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i])))
       
-      test<-X[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), 1:(j+1)] #+1 eftersom jag har interceptcol
-      train<-X[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), 1:(j+1)] #Detta blir tr?ning
-      Y_test<-Y[as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
-      Y_train<-Y[-as.vector(unlist(suppressWarnings(split(1:n, f=1:folds)[i]))), ]
+      test<-X[slumpat, 1:(j+1)] #+1 eftersom jag har interceptcol
+      train<-X[-slumpat, 1:(j+1)]
+      Y_test<-Y[slumpat, ]
+      Y_train<-Y[-slumpat, ]
       
-      betahat<-solve(t(train)%*%train) %*% t(train) %*% Y_train #Skattar modellen p? tr?ningsdatan
+      betahat<-solve(t(train)%*%train) %*% t(train) %*% Y_train #Skattar modellen pa traningsdatan
       yhat <- test %*% betahat  #Testar p? den nya datan, dvs skattar nya datan.
       resid_err <- Y_test - yhat #Och tar fram felen.
       
@@ -100,7 +103,7 @@ test$W
 test$A
 x_dat<-data.frame(test$S)
 dat<-test$S
-newdata<-cbind(Visc=nir$Viscosity, dat)
+newdata<-cbind(Visc=nir$Viscosity, x_dat)
 
 as<-lm(formula =  Visc~X1+X2+X3, data=newdata)
 summary(as)
