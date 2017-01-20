@@ -76,16 +76,19 @@ CV_ica <- function(data=nir, folds, M) {
   resmat<-as.data.frame(resmat)
   CV_score<-apply(resmat, 2, mean)
   data<-as.data.frame(cbind(CV_score, M=1:M))
- 
-  cv_plotten<-ggplot(data=data)+geom_point(aes(x=M, y=CV_score), size=2)+
-    theme_bw()+ylim(c(0,.001))+xlab("Number of components")+
+  #data<-as.data.frame(cbind(log_cv=log(CV_score), M=1:M))
+  
+  cv_plotten<-ggplot(data=data)+geom_point(aes(x=M, y=CV_score), size=2)+#y=log_cv
+    theme_bw()+
+    #ylim(c(0,.001))+
+    xlab("Number of components")+
     ggtitle("CV-error versus number off ICA-components")+
     geom_hline(yintercept=min(data$CV_score), col="red")
   
   optimal_subset<-data[data$CV_score==min(data$CV_score),]
   
   plot(cv_plotten)
-  
+  #return(data)
   return(optimal_subset)
 }
 
@@ -96,7 +99,7 @@ nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 
 library(fastICA)
 
-test<-fastICA(nir, n.comp=3)
+test<-fastICA(nir, n.comp=1)
 test$X
 test$K
 test$W
@@ -105,7 +108,7 @@ x_dat<-data.frame(test$S)
 dat<-test$S
 newdata<-cbind(Visc=nir$Viscosity, x_dat)
 
-as<-lm(formula =  Visc~X1+X2+X3, data=newdata)
+as<-lm(formula =  Visc~, data=newdata)
 summary(as)
 
 betahat<-solve(t(dat)%*%dat) %*% t(dat) %*% nir$Viscosity
