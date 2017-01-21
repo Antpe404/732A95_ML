@@ -50,7 +50,7 @@ CV_ica <- function(data=nir, folds, M) {
   
   for (j in 1:M){ 
 
-    X<-data.frame(fastICA(data, n.comp=(j))$S) #Extraherar M ICA components.
+    X<-data.frame(fastICA(data[, 1:(ncol(data)-1)], n.comp=(j))$S) #Extraherar M ICA components.
     X<-as.matrix(X)
     
     n<-dim(X)[1]
@@ -83,18 +83,18 @@ CV_ica <- function(data=nir, folds, M) {
     #ylim(c(0,.001))+
     xlab("Number of components")+
     ggtitle("CV-error versus number off ICA-components")+
-    geom_hline(yintercept=min(data$CV_score), col="red")
+    geom_vline(xintercept=data$M[data$CV_score==min(data$CV_score)], col="red")
   
   optimal_subset<-data[data$CV_score==min(data$CV_score),]
   
   plot(cv_plotten)
-  #return(data)
-  return(optimal_subset)
+  return(data)
+  #return(optimal_subset)
 }
 
-CV_ica(data=nir, folds=3, M=12)
+CV_ica(data=nir, folds=3, M=20)
 
-#nedan kladd
+#nedan kladd##################################################################3333
 nir<-read.csv2("data/NIRspectra.csv", sep=";", header=T)
 
 library(fastICA)

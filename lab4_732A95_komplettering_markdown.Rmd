@@ -63,7 +63,7 @@ CV_ica <- function(data=nir, folds, M) {
   
   for (j in 1:M){ 
 
-    X<-data.frame(fastICA(data, n.comp=(j))$S) #Extraherar M ICA components.
+    X<-data.frame(fastICA(data[, 1:(ncol(data)-1)], n.comp=(j))$S) #Extraherar M ICA components.
     X<-as.matrix(X)
     
     n<-dim(X)[1]
@@ -95,8 +95,8 @@ CV_ica <- function(data=nir, folds, M) {
     theme_bw()+
     #ylim(c(0,.001))+
     xlab("Number of components")+
-    ggtitle("CV-error versus number of ICA-components")#+
-    #geom_hline(yintercept=min(data$CV_score), col="red")
+    ggtitle("CV-error versus number of ICA-components")+
+    geom_vline(xintercept=data$M[data$CV_score==min(data$CV_score)], col="red")
   
   optimal_subset<-data[data$CV_score==min(data$CV_score),]
   
@@ -105,10 +105,11 @@ CV_ica <- function(data=nir, folds, M) {
   return(optimal_subset)
 }
 
-CV_ica(data=nir, folds=3, M=80)
+CV_ica(data=nir, folds=3, M=120)
 
 ```
 
-It shows that only one component from the ICA analysis is a very sufficient explanatory variable to describe the \textit{Viscosity} in a linear regression. It has a very low CV score. From the plot I would choose two components though. The CV score gets almost zero already at two components, and thereafter gets even smaller for every component I add. From the elbow method I would choose two components though. That results in a minimized number of components and a very very low CV score.
+The CV score gets minimized when 19 ICA components are used, which is clarified by the red vertical line in the plot. I'd say, according to the elbow rule, that it's reasonable to select either seven or about 16-19 components, depending on whether it's most important to minimize the number of components or the prediction error. If I choose seven, I'm minimizing the number of components and still has a prediction error below 10. If it's really  important to have a low prediction error, I'd go with 16-19 components. However, there's no reason to use more than 19 components.
 
-Note that all code used in this complimentary assignment is already visualized, why I have no appendix.
+
+Note that all code used in this complimentary assignment is already visualized in the code chunks, why I have no appendix.
